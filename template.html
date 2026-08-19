@@ -826,6 +826,27 @@ function fitScale(contentWidth, viewportWidth) {
     return node;
   }
 
+  function renderErrors(errors, root) {
+    root.textContent = '';
+    const sheet = el('div', 'sheet');
+    const box = el('div', 'errors');
+    box.appendChild(el('h2', null, 'This artifact cannot be drawn'));
+    const list = document.createElement('ul');
+    errors.forEach((message) => {
+      const item = document.createElement('li');
+      item.textContent = message;
+      list.appendChild(item);
+    });
+    box.appendChild(list);
+    box.appendChild(el(
+      'p', null,
+      'Fix the JSON in the "artifact" script block of this file, then reload. ' +
+      'See SCHEMA.md in the journey repository for the field reference.'
+    ));
+    sheet.appendChild(box);
+    root.appendChild(sheet);
+  }
+
   function renderArtifact(data, root) {
     root.textContent = '';
     const sheet = el('div', 'sheet');
@@ -850,9 +871,24 @@ function fitScale(contentWidth, viewportWidth) {
 
   const dataNode = document.getElementById('artifact');
   const root = document.getElementById('root');
-  const data = JSON.parse(dataNode.textContent);
-  renderArtifact(data, root);
-  document.title = data.title + ' — ' + (data.subtitle || 'Journey');
+
+  let data = null;
+  try {
+    data = JSON.parse(dataNode.textContent);
+  } catch (error) {
+    renderErrors(['The artifact data is not valid JSON: ' + error.message], root);
+  }
+
+  if (data) {
+    const check = validateModel(data);
+    if (check.ok) {
+      renderArtifact(data, root);
+      document.title = data.title + ' — ' + (data.subtitle || 'Journey');
+    } else {
+      renderErrors(check.errors, root);
+      document.title = 'Invalid artifact — Journey';
+    }
+  }
 })();
 </script>
 </body>
