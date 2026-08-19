@@ -180,10 +180,15 @@ body {
   transform: translateY(0);
 }
 .cell--flag-risk .cell__flag::before { background: none; border: 1px solid var(--accent); }
-.cell--target { animation: flash 1.2s ease-out; }
+.cell.cell--target { animation: flash 1.2s ease-out; }
 @keyframes flash {
   from { background: #fdece9; }
   to { background: transparent; }
+}
+.emotion__dot.cell--target { animation: dot-flash 1.2s ease-out; }
+@keyframes dot-flash {
+  from { stroke: var(--accent); stroke-width: 7; stroke-opacity: 0.35; }
+  to   { stroke: var(--accent); stroke-width: 0; stroke-opacity: 0; }
 }
 
 .divider {
@@ -743,7 +748,7 @@ function fitScale(contentWidth, viewportWidth) {
     if (!target) return;
     target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
     target.classList.remove('cell--target');
-    void target.offsetWidth;
+    void target.getBoundingClientRect();
     target.classList.add('cell--target');
   }
 
