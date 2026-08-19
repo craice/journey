@@ -169,6 +169,19 @@ body {
   color: var(--ink-soft);
 }
 .cell__note { display: block; margin-top: 5px; color: var(--ink-soft); }
+.cell__route {
+  display: block;
+  margin-top: 6px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: var(--type-mono);
+  letter-spacing: 0;
+  color: var(--ink-soft);
+}
+/* Route is the default view: a cell that has one hides its code reference.
+   A cell without a route keeps showing its reference, so nothing goes blank. */
+.cell--has-route .cell__ref { display: none; }
+.sheet--code .cell--has-route .cell__route { display: none; }
+.sheet--code .cell--has-route .cell__ref { display: block; }
 .cell__flag {
   display: inline-block;
   font-size: var(--type-small);
@@ -341,17 +354,20 @@ body {
         {
           "step": "discover",
           "text": "Landing page",
-          "ref": "app/page.tsx"
+          "ref": "app/page.tsx",
+          "route": "/"
         },
         {
           "step": "signup",
           "text": "Signup form",
-          "ref": "app/signup/form.tsx:41"
+          "ref": "app/signup/form.tsx:41",
+          "route": "/signup"
         },
         {
           "step": "pay",
           "text": "Payment screen",
-          "ref": "app/pay/page.tsx:23"
+          "ref": "app/pay/page.tsx:23",
+          "route": "/pay"
         },
         {
           "step": "wait",
@@ -362,7 +378,8 @@ body {
         {
           "step": "activate",
           "text": "Empty state",
-          "ref": "app/dashboard/empty.tsx"
+          "ref": "app/dashboard/empty.tsx",
+          "route": "/dashboard"
         }
       ]
     },
@@ -589,6 +606,7 @@ function buildLayout(data) {
         colSpan: cell.span === undefined ? 1 : cell.span,
         text: cell.text === undefined ? '' : cell.text,
         ref: cell.ref === undefined ? '' : cell.ref,
+        route: cell.route === undefined ? '' : cell.route,
         note: cell.note === undefined ? '' : cell.note,
         flag: cell.flag === undefined ? '' : cell.flag,
         score: cell.score,
@@ -726,6 +744,13 @@ const MIN_SCALE = 0.4;
       node.appendChild(el('span', 'cell__flag', cell.flag === 'gap' ? 'Gap' : 'Risk'));
     }
     node.appendChild(document.createTextNode(cell.text));
+    // Both addresses are rendered; the sheet's mode class picks which one shows.
+    // A cell carrying only one of them shows that one in either mode, so
+    // backstage and support lanes never go blank in route mode.
+    if (cell.route) {
+      node.classList.add('cell--has-route');
+      node.appendChild(el('span', 'cell__route', cell.route));
+    }
     if (cell.ref) node.appendChild(el('span', 'cell__ref', cell.ref));
     if (cell.note) node.appendChild(el('span', 'cell__note', cell.note));
     return node;
@@ -745,8 +770,29 @@ const MIN_SCALE = 0.4;
     });
   }
 
+  /** Switches the whole sheet between showing routes and showing code
+      references. Purely a class flip — no re-render, so scroll position and the
+      emotion lanes are untouched. */
+  function setAddressMode(mode, bar) {
+    const sheet = document.querySelector('.sheet');
+    if (sheet) sheet.classList.toggle('sheet--code', mode === 'code');
+    bar.querySelectorAll('button[data-mode]').forEach((button) => {
+      button.setAttribute('aria-pressed', String(button.dataset.mode === mode));
+    });
+  }
+
   function renderToolbar() {
     const bar = el('div', 'toolbar');
+
+    [['route', 'Route'], ['code', 'Code']].forEach(([mode, label]) => {
+      const button = el('button', null, label);
+      button.type = 'button';
+      button.dataset.mode = mode;
+      button.setAttribute('aria-pressed', String(mode === 'route'));
+      button.addEventListener('click', () => setAddressMode(mode, bar));
+      bar.appendChild(button);
+    });
+
     const print = el('button', null, 'Print');
     print.type = 'button';
     print.addEventListener('click', () => window.print());

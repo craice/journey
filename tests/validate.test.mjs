@@ -223,3 +223,9 @@ test('reports both out-of-bounds span and invalid flag in the same cell', () => 
   assert.ok(spanErrors.length > 0, 'expected span error');
   assert.ok(flagErrors.length > 0, 'expected flag error');
 });
+
+test('accepts a route on a cards cell', () => {
+  const model = threeSteps();
+  model.lanes[0].cells = [{ step: 'signup', text: 'Signup form', route: '/signup' }];
+  assert.equal(validateModel(model).ok, true);
+});

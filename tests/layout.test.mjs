@@ -278,3 +278,17 @@ test('an emotion lane gets no fillers — its holder already spans every column'
   data.type = 'journey';
   assert.deepEqual(buildLayout(data).rows[0].fillers, []);
 });
+
+test('carries a cell route through to the layout', () => {
+  const data = fourSteps([{
+    id: 'front', label: 'Frontstage', kind: 'cards',
+    cells: [
+      { step: 's1', text: 'Landing page', route: '/', ref: 'app/page.tsx' },
+      { step: 's2', text: 'Validates the document', ref: 'api/users.ts:88' }
+    ]
+  }]);
+  const [landing, validates] = buildLayout(data).rows[0].cells;
+  assert.equal(landing.route, '/');
+  assert.equal(landing.ref, 'app/page.tsx');
+  assert.equal(validates.route, '', 'a cell with no route reports an empty string, like ref does');
+});

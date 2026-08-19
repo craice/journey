@@ -42,6 +42,9 @@ curve, Saying and Opportunities lanes.
 
 - Lane labels and column headers that stay pinned while you scroll a wide
   artifact.
+- A Route / Code switch: the artifact shows each screen's route by default and
+  swaps to the `file:line` behind it on demand, so the whole picture reads as a
+  path through the product rather than a tour of the source tree.
 - Columns held to a readable measure, so a few phases on a wide monitor stay a
   grid rather than stretching into empty fields.
 - Print to PDF in landscape, with the interface and the sticky positioning

@@ -2,72 +2,179 @@
   "type": "blueprint",
   "title": "Onboarding",
   "subtitle": "Service Blueprint",
-  "meta": { "version": "v1", "date": "2026-08-19", "source": "acme/app@a1b2c3d" },
+  "meta": {
+    "version": "v1",
+    "date": "2026-08-19",
+    "source": "acme/app@a1b2c3d"
+  },
   "steps": [
-    { "id": "discover", "label": "Discovers" },
-    { "id": "signup", "label": "Signs up" },
-    { "id": "pay", "label": "Pays" },
-    { "id": "wait", "label": "Waits" },
-    { "id": "activate", "label": "Activates" }
+    {
+      "id": "discover",
+      "label": "Discovers"
+    },
+    {
+      "id": "signup",
+      "label": "Signs up"
+    },
+    {
+      "id": "pay",
+      "label": "Pays"
+    },
+    {
+      "id": "wait",
+      "label": "Waits"
+    },
+    {
+      "id": "activate",
+      "label": "Activates"
+    }
   ],
   "lanes": [
     {
-      "id": "evidence", "label": "Evidence", "kind": "cards",
+      "id": "evidence",
+      "label": "Evidence",
+      "kind": "cards",
       "cells": [
-        { "step": "discover", "text": "Invite email" },
-        { "step": "signup", "text": "Signup form" },
-        { "step": "pay", "text": "Payment QR code" },
-        { "step": "activate", "text": "Empty dashboard" }
-      ]
-    },
-    {
-      "id": "actions", "label": "User actions", "kind": "cards",
-      "cells": [
-        { "step": "discover", "text": "Opens the invite link" },
-        { "step": "signup", "text": "Fills in name and document" },
-        { "step": "pay", "text": "Scans the code and pays" },
-        { "step": "wait", "text": "Waits for confirmation" },
-        { "step": "activate", "text": "Creates the first project" }
-      ]
-    },
-    {
-      "id": "frontstage", "label": "Frontstage", "kind": "cards",
-      "cells": [
-        { "step": "discover", "text": "Landing page", "ref": "app/page.tsx" },
-        { "step": "signup", "text": "Signup form", "ref": "app/signup/form.tsx:41" },
-        { "step": "pay", "text": "Payment screen", "ref": "app/pay/page.tsx:23" },
         {
-          "step": "wait", "text": "No pending state", "flag": "gap",
+          "step": "discover",
+          "text": "Invite email"
+        },
+        {
+          "step": "signup",
+          "text": "Signup form"
+        },
+        {
+          "step": "pay",
+          "text": "Payment QR code"
+        },
+        {
+          "step": "activate",
+          "text": "Empty dashboard"
+        }
+      ]
+    },
+    {
+      "id": "actions",
+      "label": "User actions",
+      "kind": "cards",
+      "cells": [
+        {
+          "step": "discover",
+          "text": "Opens the invite link"
+        },
+        {
+          "step": "signup",
+          "text": "Fills in name and document"
+        },
+        {
+          "step": "pay",
+          "text": "Scans the code and pays"
+        },
+        {
+          "step": "wait",
+          "text": "Waits for confirmation"
+        },
+        {
+          "step": "activate",
+          "text": "Creates the first project"
+        }
+      ]
+    },
+    {
+      "id": "frontstage",
+      "label": "Frontstage",
+      "kind": "cards",
+      "cells": [
+        {
+          "step": "discover",
+          "text": "Landing page",
+          "ref": "app/page.tsx",
+          "route": "/"
+        },
+        {
+          "step": "signup",
+          "text": "Signup form",
+          "ref": "app/signup/form.tsx:41",
+          "route": "/signup"
+        },
+        {
+          "step": "pay",
+          "text": "Payment screen",
+          "ref": "app/pay/page.tsx:23",
+          "route": "/pay"
+        },
+        {
+          "step": "wait",
+          "text": "No pending state",
+          "flag": "gap",
           "note": "The screen shows nothing between paying and confirmation"
         },
-        { "step": "activate", "text": "Empty state", "ref": "app/dashboard/empty.tsx" }
+        {
+          "step": "activate",
+          "text": "Empty state",
+          "ref": "app/dashboard/empty.tsx",
+          "route": "/dashboard"
+        }
       ]
     },
     {
-      "id": "backstage", "label": "Backstage", "kind": "cards",
+      "id": "backstage",
+      "label": "Backstage",
+      "kind": "cards",
       "cells": [
-        { "step": "signup", "text": "Validates the document", "ref": "api/users.ts:88" },
-        { "step": "pay", "text": "Creates the charge", "ref": "api/payments.ts:12" },
         {
-          "step": "wait", "text": "Webhook handler swallows errors", "flag": "risk",
-          "ref": "api/webhooks/payment.ts:34", "note": "Empty catch: a failed charge stays pending forever"
+          "step": "signup",
+          "text": "Validates the document",
+          "ref": "api/users.ts:88"
         },
-        { "step": "activate", "text": "Seeds the first project", "ref": "api/projects.ts:7" }
+        {
+          "step": "pay",
+          "text": "Creates the charge",
+          "ref": "api/payments.ts:12"
+        },
+        {
+          "step": "wait",
+          "text": "Webhook handler swallows errors",
+          "flag": "risk",
+          "ref": "api/webhooks/payment.ts:34",
+          "note": "Empty catch: a failed charge stays pending forever"
+        },
+        {
+          "step": "activate",
+          "text": "Seeds the first project",
+          "ref": "api/projects.ts:7"
+        }
       ]
     },
     {
-      "id": "support", "label": "Support processes", "kind": "cards",
+      "id": "support",
+      "label": "Support processes",
+      "kind": "cards",
       "cells": [
-        { "step": "discover", "text": "Invite delivery", "ref": "jobs/invites.ts:19", "span": 2 },
         {
-          "step": "pay", "text": "No receipt email", "flag": "gap", "span": 2,
+          "step": "discover",
+          "text": "Invite delivery",
+          "ref": "jobs/invites.ts:19",
+          "span": 2
+        },
+        {
+          "step": "pay",
+          "text": "No receipt email",
+          "flag": "gap",
+          "span": 2,
           "note": "Nothing sends a confirmation once the charge clears"
         }
       ]
     }
   ],
   "dividers": [
-    { "after": "actions", "label": "Line of interaction" },
-    { "after": "frontstage", "label": "Line of visibility" }
+    {
+      "after": "actions",
+      "label": "Line of interaction"
+    },
+    {
+      "after": "frontstage",
+      "label": "Line of visibility"
+    }
   ]
 }

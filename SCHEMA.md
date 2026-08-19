@@ -61,7 +61,8 @@ Used when the containing lane's `kind` is `"cards"`.
 |---|---|---|---|
 | `step` | string | yes | Must name an existing step id. |
 | `text` | string | yes | Non-empty. Required only on cards cells, not on emotion cells. |
-| `ref` | string | no | Free-form `path:line` pointer, rendered under the text. Not validated. |
+| `ref` | string | no | Free-form `path:line` pointer into the source. Not validated. |
+| `route` | string | no | The address of the screen in the running product (`/signup`). Shown in place of `ref` while the artifact is in route mode. Not validated. |
 | `note` | string | no | Free-form annotation, rendered under the text/ref. Not validated. |
 | `flag` | `"gap" \| "risk"` | no | If present, must be one of these two values. `gap`: no corresponding code exists. `risk`: code exists but is fragile. |
 | `span` | integer | no | Defaults to `1`. Must be an integer of 1 or more. May not run past the last step, and may not overlap another cell in the same lane. |

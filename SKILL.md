@@ -125,9 +125,19 @@ things:
   swallows or ignores. A risk cell *does* carry a `ref` — you found the code, you're
   flagging its quality, not its absence.
 
+### Routes belong to screens
+
+A `route` is the address of a screen in the running product: `/signup`, `/orders/:id`.
+Put one on every Frontstage cell that names a screen, because that is what a reader
+scanning the whole journey wants to follow — the path a person walks, not the file
+tree. Leave `route` off Backstage and Support processes: an endpoint or a queued job
+is not a screen, and stretching the field to cover them makes artifacts from different
+projects stop meaning the same thing. Those lanes keep their `ref`, which is what the
+artifact shows for them in either mode.
+
 The rule that governs both, on implementation lanes (see "Extraction pass" above for
 the implementation/experience split): **never mark a cell as confirmed without a real
-`ref`.** If you searched the system you're mapping and found nothing, the cell is a
+address — a verified `route` or a verified `ref`.** If you searched the system you're mapping and found nothing, the cell is a
 gap — write `flag: "gap"` and explain what's missing in `note`, don't leave the cell
 out of the artifact and don't write text that reads as if the step is handled. If you
 didn't search at all (out of scope, too large, ran out of time), say so in your report
@@ -204,7 +214,14 @@ these yourself before calling the work done, so the failure never reaches the re
 - [ ] A `journey` artifact has exactly one lane with `kind: "emotion"`; a `blueprint`
       has zero or one.
 - [ ] Every non-gap cell in an implementation lane (Frontstage, Backstage, Support
-      processes, or your equivalents) carries a non-empty `ref`.
+      processes, or your equivalents) carries a non-empty `route` or `ref`. Screen
+      cells may rely on the `route` alone; a lane with no screens has only `ref`.
+- [ ] **Every `route` was read, not guessed.** A route is the one field a framework's
+      conventions let you invent without opening anything — `/signup` is the obvious
+      guess in any file-routed app, and it is wrong often enough to matter. Take each
+      route from the routing configuration itself (the route file, the router table,
+      the path decorator) and name in your report where you read it. A route you
+      inferred from a folder name is a guess wearing a citation.
 - [ ] **Every `ref` is right, not just present.** For each cell that carries one,
       re-open that exact file at that exact line — right now, not from memory of
       having checked it earlier — and confirm the line actually holds, or is squarely
