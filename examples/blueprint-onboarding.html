@@ -6,19 +6,18 @@
 <title>Journey Artifact</title>
 <style id="theme">
 :root {
-  --zoom: 1;
-  --col-w: calc(232px * var(--zoom));
-  --col-max: calc(320px * var(--zoom));
-  --lane-w: calc(124px * var(--zoom));
+  --col-w: 232px;
+  --col-max: 320px;
+  --lane-w: 124px;
   --ink: #111;
   --ink-soft: #8a8a8a;
   --ink-faint: #b5b5b5;
   --rule: #e3e3e3;
   --accent: #e2231a;
   --paper: #fff;
-  --type: calc(13px * var(--zoom));
-  --type-small: calc(9px * var(--zoom));
-  --type-mono: calc(10px * var(--zoom));
+  --type: 13px;
+  --type-small: 9px;
+  --type-mono: 10px;
 }
 
 * { box-sizing: border-box; }
@@ -215,13 +214,13 @@ body {
 }
 
 .emotion { position: relative; padding: 0; border-bottom: 1px solid var(--rule); }
-.emotion__svg { display: block; width: 100%; height: calc(76px * var(--zoom)); overflow: visible; }
+.emotion__svg { display: block; width: 100%; height: 76px; overflow: visible; }
 .emotion__axis { stroke: #cfcfcf; stroke-width: 1; stroke-dasharray: 2 3; }
 .emotion__line { fill: none; stroke: var(--ink); stroke-width: 1; }
 .emotion__dot { fill: var(--ink); }
 .emotion__dot--flag { fill: var(--accent); }
 .emotion__label {
-  font-size: calc(8px * var(--zoom));
+  font-size: 8px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   fill: var(--ink-soft);
@@ -707,13 +706,6 @@ function sparklinePoints(cells, columnCount, box) {
 
 const MIN_SCALE = 0.4;
 
-/** The zoom level that fits contentWidth inside viewportWidth, clamped to a readable floor. */
-function fitScale(contentWidth, viewportWidth) {
-  if (!(contentWidth > 0) || !(viewportWidth > 0)) return 1;
-  const raw = viewportWidth / contentWidth;
-  if (raw >= 1) return 1;
-  return Math.max(MIN_SCALE, round2(raw));
-}
 </script>
 
 <script id="ui">
@@ -739,42 +731,11 @@ function fitScale(contentWidth, viewportWidth) {
     return node;
   }
 
-  const ZOOM_LEVELS = [1, 0.75, 0.5];
-  let toolbarNode = null;
-  let currentZoom = 1;
   let currentLayout = null;
-  let zoomBeforePrint = null;
 
-  function setZoom(value) {
-    currentZoom = value;
-    document.documentElement.style.setProperty('--zoom', String(value));
-    if (!toolbarNode) return;
-    toolbarNode.querySelectorAll('button[data-zoom]').forEach((button) => {
-      button.setAttribute('aria-pressed', String(Number(button.dataset.zoom) === value));
-    });
-  }
-
-  function applyFit() {
-    const grid = document.querySelector('.grid');
-    const sheet = document.querySelector('.sheet');
-    if (!grid || !sheet) return;
-    document.documentElement.style.setProperty('--zoom', '1');
-    const contentWidth = grid.scrollWidth;
-    // Read the sheet's own left+right padding rather than hard-coding it, so this
-    // stays correct if .sheet's padding in <style id="theme"> ever changes.
-    const sheetStyle = getComputedStyle(sheet);
-    const sheetPadding = parseFloat(sheetStyle.paddingLeft) + parseFloat(sheetStyle.paddingRight);
-    setZoom(fitScale(contentWidth, document.documentElement.clientWidth - sheetPadding));
-  }
-
-  // Letter landscape (279.4mm) minus the 12mm @page margins on each side, at 96dpi.
-  // Letter is narrower than A4 landscape, so a width that fits Letter fits both.
-  const PRINT_WIDTH_PX = 960;
-
-  /** Redraws every emotion lane from the current layout. Used after a zoom change
-      that ResizeObserver has not yet reacted to (its callback is asynchronous),
-      most notably right before window.print(), which runs synchronously and would
-      otherwise snapshot a sparkline still sized for the pre-print layout. */
+  /** Redraws every emotion lane from the current layout. The sparkline is drawn in
+      real pixels from the holder's measured box, so it has to be rebuilt whenever
+      that box changes size. */
   function redrawEmotionLanes() {
     if (!currentLayout) return;
     document.querySelectorAll('[data-emotion-row]').forEach((holder) => {
@@ -784,59 +745,12 @@ function fitScale(contentWidth, viewportWidth) {
     });
   }
 
-  /** Fits the artifact to the printable page width (not the browser viewport,
-      which has nothing to do with the paper size the @page rule requests) and
-      redraws the emotion lanes synchronously so print sees current geometry. */
-  function preparePrint() {
-    if (zoomBeforePrint !== null) return;
-    zoomBeforePrint = currentZoom;
-    const grid = document.querySelector('.grid');
-    if (grid) {
-      document.documentElement.style.setProperty('--zoom', '1');
-      const contentWidth = grid.scrollWidth;
-      // fitScale floors at 0.4: a sufficiently wide artifact will still overflow
-      // the page rather than shrink to unreadably small type. Deliberate, not a bug.
-      setZoom(fitScale(contentWidth, PRINT_WIDTH_PX));
-    }
-    redrawEmotionLanes();
-  }
-
-  // Ctrl+P (and any other browser-native print trigger) fires 'beforeprint'
-  // without ever touching the toolbar button, so preparePrint must run from
-  // this listener rather than only from the button's click handler — otherwise
-  // the most common way people print gets whatever zoom happens to be on
-  // screen and a wide artifact is clipped.
-  window.addEventListener('beforeprint', preparePrint);
-
-  window.addEventListener('afterprint', () => {
-    if (zoomBeforePrint === null) return;
-    setZoom(zoomBeforePrint);
-    redrawEmotionLanes();
-    zoomBeforePrint = null;
-  });
-
   function renderToolbar() {
     const bar = el('div', 'toolbar');
-    ZOOM_LEVELS.forEach((level) => {
-      const button = el('button', null, `${Math.round(level * 100)}%`);
-      button.type = 'button';
-      button.dataset.zoom = String(level);
-      button.setAttribute('aria-pressed', String(level === 1));
-      button.addEventListener('click', () => setZoom(level));
-      bar.appendChild(button);
-    });
-
-    const fit = el('button', null, 'Fit');
-    fit.type = 'button';
-    fit.addEventListener('click', applyFit);
-    bar.appendChild(fit);
-
     const print = el('button', null, 'Print');
     print.type = 'button';
     print.addEventListener('click', () => window.print());
     bar.appendChild(print);
-
-    toolbarNode = bar;
     return bar;
   }
 
@@ -911,10 +825,8 @@ function fitScale(contentWidth, viewportWidth) {
 
   // Vertical gap (in real CSS-pixel units, since the viewBox is now 1:1 with the
   // holder's measured box) between a dot and its caption label. Kept well under
-  // half of the lane's default height (76px at zoom 1, per .emotion__svg's CSS,
-  // and never smaller than 30px even at the minimum zoom fitScale allows) so the
-  // label always lands inside the box no matter which side of the midline it is
-  // placed on.
+  // half of the lane's height (76px, per .emotion__svg's CSS) so the label always
+  // lands inside the box no matter which side of the midline it is placed on.
   const EMOTION_LABEL_GAP = 12;
 
   /** Builds a screen-reader label for the whole sparkline from the row's own data —
@@ -954,7 +866,7 @@ function fitScale(contentWidth, viewportWidth) {
       clears the holder first, so repeated calls never append duplicate content.
 
       Measurement order matters here: `.emotion` has no height of its own — the
-      SVG's CSS (`height: calc(76px * var(--zoom))`) is what gives that grid row
+      SVG's CSS (`height: 76px`) is what gives that grid row
       its height, since nothing else in the row is that tall. So the (empty)
       canvas is attached to the holder *first*, then measured, then filled in.
       Measuring the holder itself before anything is attached would read the
@@ -1017,9 +929,9 @@ function fitScale(contentWidth, viewportWidth) {
     });
   }
 
-  /** Draws the emotion lane and keeps it correct as the holder's box changes —
-      on window resize and on any zoom change (the toolbar's zoom levels, Fit,
-      and print all go through `setZoom`, which changes the column width).
+  /** Draws the emotion lane and keeps it correct as the holder's box changes.
+      Columns flex between --col-w and --col-max, so a window resize changes the
+      holder's width and the sparkline has to be redrawn against the new box.
       `drawEmotion` clears and rebuilds the SVG from scratch each time (never
       appends onto stale content), and redrawing does not itself change the
       holder's size, so this does not create a resize feedback loop. */

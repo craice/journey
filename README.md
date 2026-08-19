@@ -42,10 +42,10 @@ curve, Saying and Opportunities lanes.
 
 - Lane labels and column headers that stay pinned while you scroll a wide
   artifact.
-- Three zoom levels plus a Fit button that scales the whole grid to the
-  viewport.
-- Print to PDF in landscape, laid out for the printed page rather than a
-  screenshot of the screen.
+- Columns held to a readable measure, so a few phases on a wide monitor stay a
+  grid rather than stretching into empty fields.
+- Print to PDF in landscape, with the interface and the sticky positioning
+  dropped. A grid wider than the page is not scaled down to fit it.
 - A gap summary band listing every flagged cell, each one click-to-scroll to
   its place in the grid.
 - Code references (`file:line`) shown directly on the cells that carry them.

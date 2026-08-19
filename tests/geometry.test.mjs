@@ -47,28 +47,3 @@ test('rounds coordinates to two decimals to keep the SVG readable', () => {
   const points = sparklinePoints([{ key: 'e:a', colStart: 1, score: 1, flag: '' }], 7, box);
   assert.equal(points[0].x, 21.43);
 });
-
-const { fitScale } = loadCore();
-
-test('returns 1 when the content already fits', () => {
-  assert.equal(fitScale(800, 1200), 1);
-  assert.equal(fitScale(1200, 1200), 1);
-});
-
-test('shrinks proportionally when the content overflows', () => {
-  assert.equal(fitScale(2000, 1000), 0.5);
-});
-
-test('never shrinks below 0.4, where the type stops being readable', () => {
-  assert.equal(fitScale(10000, 1000), 0.4);
-});
-
-test('rounds to two decimals', () => {
-  assert.equal(fitScale(1500, 1000), 0.67);
-});
-
-test('falls back to 1 for missing or nonsensical measurements', () => {
-  assert.equal(fitScale(0, 1000), 1);
-  assert.equal(fitScale(1000, 0), 1);
-  assert.equal(fitScale(NaN, 1000), 1);
-});
