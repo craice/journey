@@ -1,6 +1,6 @@
 ---
 name: journey-artifacts
-description: Use when asked to create or update a Service Blueprint or User Journey Map from a codebase — produces a single self-contained HTML file with every card tied to file:line and every hole marked as a gap.
+description: Use when asked to create or update a Service Blueprint or User Journey Map from a codebase — produces a single self-contained HTML file with every implementation claim backed by a verified file:line and every hole marked as a gap.
 ---
 
 # Journey artifacts
@@ -12,9 +12,14 @@ with its JSON data block replaced. Nothing else about the file changes.
 The reason this document exists: a diagram only draws what you give it. If you fill a
 cell with a guess, the artifact renders that guess with exactly as much confidence as a
 verified fact — the reader cannot tell the difference. The whole value of this tool is
-that they don't have to. **The single rule that protects that: never mark a cell as
-confirmed without a real `ref` (file:line). If you didn't find the code, it's a gap, not
-a guess.** Everything below exists in service of that rule.
+that they don't have to. **The single rule that protects that: never mark a cell
+claiming the code does something as confirmed without a real `ref` (file:line) that you
+have actually re-opened and verified, not merely cited. If you didn't find the code,
+it's a gap, not a guess; and a `ref` pointing at the wrong line is worse than no `ref`
+at all, because it carries a citation's authority while quietly contradicting the claim
+next to it.** (Cells describing what a person does or sees, rather than what the code
+does, are held to a related but looser standard — see "Extraction pass" below.)
+Everything below exists in service of that rule.
 
 ## Quick start
 
@@ -82,12 +87,27 @@ own worked examples follow this split: look at how `blueprint-onboarding.json`'s
 Evidence and User actions cells carry no `ref` while its Backstage and Frontstage
 cells do.
 
+When it's unclear which kind a lane is — a lane you invented that doesn't map cleanly
+onto either list — treat it as an implementation lane and require the `ref`. The
+ambiguity is not a reason to relax the rule; it's a reason to hold the higher bar,
+since the whole point of the split is to keep the ref requirement from being dodged by
+relabeling.
+
 Record the `path:line` of what you find **as you go, while the file is open** — not
 afterwards from memory. Memory drifts; a line number you copy while reading the file
 does not. If your tool access lets you grep or open files, do the extraction pass
 before you write a single cell — build a working list of (step, lane, ref) triples,
 then turn that list into JSON. Don't write prose cell text first and backfill refs
 second; that order is exactly how confident fiction gets in.
+
+Precision is far easier to preserve at the moment you have the file open than to
+reconstruct afterward, so protect it: write down the line number when you're looking
+straight at it and the cell's claim is fresh, never from a recollection of roughly
+where something was. And treat any file you cite as live, not frozen — if you (or the
+extraction pass itself) edit a file after citing a line in it, including this document
+or `template.html` while you're assembling the artifact, everything below your edit
+shifts. Re-open the cited file and re-check the line before you finish, rather than
+trusting a number you recorded before the file changed underneath it.
 
 If the codebase is large, scope the pass to the flow you were asked about (e.g. "the
 signup flow") rather than trying to map the whole application into one artifact.
@@ -185,6 +205,15 @@ these yourself before calling the work done, so the failure never reaches the re
       has zero or one.
 - [ ] Every non-gap cell in an implementation lane (Frontstage, Backstage, Support
       processes, or your equivalents) carries a non-empty `ref`.
+- [ ] **Every `ref` is right, not just present.** For each cell that carries one,
+      re-open that exact file at that exact line — right now, not from memory of
+      having checked it earlier — and confirm the line actually holds, or is squarely
+      inside, the thing the cell's text claims. A `ref` that merely exists but points
+      at the wrong line, the wrong function, or a stale location after an edit is
+      worse than no `ref` at all: it reads as a verified fact while quietly pointing
+      the reader somewhere that contradicts it. If a line doesn't hold up, fix the
+      number; if you can't relocate the real one, drop the `ref` and downgrade the
+      cell to `flag: "gap"` rather than leave a citation you haven't actually checked.
 - [ ] No literal `</script` survives unescaped anywhere in the serialized JSON.
 - [ ] The gap/risk count you report matches the actual flags in the data — recount
       from the JSON, don't recall the number from memory while writing the report.
