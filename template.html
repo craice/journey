@@ -227,6 +227,31 @@ function collectFlags(layout) {
 
   return { counts, items };
 }
+
+const SCORE_MIN = -3;
+const SCORE_MAX = 3;
+
+function round2(value) {
+  return Math.round(value * 100) / 100;
+}
+
+/** Computes one point per emotion cell, in the coordinate space of the lane's SVG box. */
+function sparklinePoints(cells, columnCount, box) {
+  if (!Array.isArray(cells) || columnCount < 1) return [];
+  const columnWidth = box.width / columnCount;
+  const range = SCORE_MAX - SCORE_MIN;
+
+  return cells
+    .slice()
+    .sort((a, b) => a.colStart - b.colStart)
+    .map((cell) => ({
+      key: cell.key,
+      score: cell.score,
+      flag: cell.flag === undefined ? '' : cell.flag,
+      x: round2((cell.colStart - 0.5) * columnWidth),
+      y: round2(((SCORE_MAX - cell.score) / range) * box.height)
+    }));
+}
 </script>
 
 <script id="ui">
