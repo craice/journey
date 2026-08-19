@@ -193,6 +193,35 @@ function buildLayout(data) {
 
   return { columns, rows, dividers };
 }
+
+/** Gathers every flagged cell for the summary band, ordered left to right. */
+function collectFlags(layout) {
+  const counts = { gap: 0, risk: 0 };
+  const stepLabelOf = new Map(layout.columns.map((column) => [column.id, column.label]));
+  const items = [];
+
+  layout.rows.forEach((row, rowIndex) => {
+    row.cells.forEach((cell) => {
+      if (cell.flag !== 'gap' && cell.flag !== 'risk') return;
+      counts[cell.flag] += 1;
+      items.push({
+        _column: cell.colStart,
+        _row: rowIndex,
+        key: cell.key,
+        flag: cell.flag,
+        laneLabel: row.label,
+        stepLabel: stepLabelOf.get(cell.step) || cell.step,
+        text: row.kind === 'emotion' ? cell.scoreLabel : cell.text,
+        note: cell.note
+      });
+    });
+  });
+
+  items.sort((a, b) => (a._column - b._column) || (a._row - b._row));
+  items.forEach((item) => { delete item._column; delete item._row; });
+
+  return { counts, items };
+}
 </script>
 
 <script id="ui">

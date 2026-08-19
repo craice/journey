@@ -91,3 +91,70 @@ test('returns empty rows for a lane with no cells', () => {
   data.lanes[0].cells = [];
   assert.deepEqual(buildLayout(data).rows[0].cells, []);
 });
+
+const { collectFlags } = loadCore();
+
+const flagged = () => ({
+  type: 'blueprint',
+  title: 'Onboarding',
+  steps: [
+    { id: 'discover', label: 'Discovers' },
+    { id: 'signup', label: 'Signs up' },
+    { id: 'pay', label: 'Pays' }
+  ],
+  lanes: [
+    {
+      id: 'front', label: 'Frontstage', kind: 'cards',
+      cells: [
+        { step: 'pay', text: 'No error state', flag: 'gap', note: 'Webhook failure is silent' },
+        { step: 'discover', text: 'Landing page', ref: 'app/page.tsx' }
+      ]
+    },
+    {
+      id: 'back', label: 'Backstage', kind: 'cards',
+      cells: [{ step: 'signup', text: 'Empty catch', flag: 'risk' }]
+    }
+  ]
+});
+
+test('counts gaps and risks separately', () => {
+  const summary = collectFlags(buildLayout(flagged()));
+  assert.deepEqual(summary.counts, { gap: 1, risk: 1 });
+});
+
+test('lists only flagged cells, with lane and step labels resolved', () => {
+  const summary = collectFlags(buildLayout(flagged()));
+  assert.equal(summary.items.length, 2);
+  assert.deepEqual(summary.items[0], {
+    key: 'back:signup',
+    flag: 'risk',
+    laneLabel: 'Backstage',
+    stepLabel: 'Signs up',
+    text: 'Empty catch',
+    note: ''
+  });
+});
+
+test('orders items left to right, then top to bottom', () => {
+  const summary = collectFlags(buildLayout(flagged()));
+  assert.deepEqual(summary.items.map((item) => item.key), ['back:signup', 'front:pay']);
+});
+
+test('reports zero counts and no items when nothing is flagged', () => {
+  const data = flagged();
+  data.lanes.forEach((lane) => lane.cells.forEach((cell) => { delete cell.flag; }));
+  const summary = collectFlags(buildLayout(data));
+  assert.deepEqual(summary, { counts: { gap: 0, risk: 0 }, items: [] });
+});
+
+test('includes flagged emotion cells using their score label as text', () => {
+  const data = flagged();
+  data.lanes.push({
+    id: 'emotion', label: 'Emotion', kind: 'emotion',
+    cells: [{ step: 'pay', score: -3, label: 'Anxious', flag: 'gap' }]
+  });
+  const summary = collectFlags(buildLayout(data));
+  const item = summary.items.find((entry) => entry.key === 'emotion:pay');
+  assert.equal(item.text, 'Anxious');
+  assert.equal(summary.counts.gap, 2);
+});
