@@ -243,9 +243,32 @@ body {
 <script type="application/json" id="artifact">
 {
   "type": "blueprint",
-  "title": "Untitled",
-  "steps": [{ "id": "step-1", "label": "Step 1" }],
-  "lanes": [{ "id": "actions", "label": "User actions", "kind": "cards", "cells": [] }]
+  "title": "Onboarding",
+  "subtitle": "Service Blueprint",
+  "meta": { "version": "v1", "date": "2026-08-19" },
+  "steps": [
+    { "id": "discover", "label": "Discovers" },
+    { "id": "signup", "label": "Signs up" },
+    { "id": "pay", "label": "Pays" }
+  ],
+  "lanes": [
+    {
+      "id": "actions", "label": "User actions", "kind": "cards",
+      "cells": [
+        { "step": "discover", "text": "Opens the invite link" },
+        { "step": "signup", "text": "Fills in the form" },
+        { "step": "pay", "text": "Scans the QR code" }
+      ]
+    },
+    {
+      "id": "backstage", "label": "Backstage", "kind": "cards",
+      "cells": [
+        { "step": "signup", "text": "Validates the document", "ref": "api/users.ts:88", "span": 2 },
+        { "step": "discover", "text": "No visit tracking", "flag": "gap", "note": "Nothing logs the click" }
+      ]
+    }
+  ],
+  "dividers": [{ "after": "actions", "label": "Line of interaction" }]
 }
 </script>
 
@@ -495,7 +518,94 @@ function fitScale(contentWidth, viewportWidth) {
 </script>
 
 <script id="ui">
-/* DOM layer. */
+(function () {
+  function el(tag, className, text) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined && text !== '') node.textContent = text;
+    return node;
+  }
+
+  function renderCell(cell) {
+    const node = el('div', 'cell');
+    node.dataset.key = cell.key;
+    node.style.gridColumn = `${cell.colStart + 1} / span ${cell.colSpan}`;
+    if (cell.flag) node.classList.add(`cell--flag-${cell.flag}`);
+    if (cell.flag) {
+      node.appendChild(el('span', 'cell__flag', cell.flag === 'gap' ? 'Gap' : 'Risk'));
+    }
+    node.appendChild(document.createTextNode(cell.text));
+    if (cell.ref) node.appendChild(el('span', 'cell__ref', cell.ref));
+    if (cell.note) node.appendChild(el('span', 'cell__note', cell.note));
+    return node;
+  }
+
+  function renderGrid(layout) {
+    const grid = el('div', 'grid');
+    grid.style.setProperty('--cols', String(layout.columns.length));
+
+    grid.appendChild(el('div', 'col-head col-head--corner'));
+    layout.columns.forEach((column, index) => {
+      const head = el('div', 'col-head');
+      head.appendChild(el('span', 'col-head__num', String(index + 1).padStart(2, '0')));
+      head.appendChild(document.createTextNode(column.label));
+      grid.appendChild(head);
+    });
+
+    layout.rows.forEach((row, rowIndex) => {
+      grid.appendChild(el('div', 'lane-label', row.label));
+
+      if (row.kind === 'emotion') {
+        const holder = el('div', 'emotion');
+        holder.style.gridColumn = `2 / span ${layout.columns.length}`;
+        holder.dataset.emotionRow = String(rowIndex);
+        grid.appendChild(holder);
+      } else {
+        row.cells.forEach((cell) => grid.appendChild(renderCell(cell)));
+      }
+
+      layout.dividers
+        .filter((divider) => divider.afterRowIndex === rowIndex)
+        .forEach((divider) => {
+          grid.appendChild(el('div', 'divider'));
+          if (divider.label) grid.appendChild(el('div', 'divider__label', divider.label));
+        });
+    });
+
+    return grid;
+  }
+
+  function renderMasthead(data) {
+    const masthead = el('div', 'masthead');
+    masthead.appendChild(el('h1', null, data.title));
+    const meta = el('div', 'meta');
+    if (data.subtitle) meta.appendChild(el('span', null, data.subtitle));
+    const info = data.meta || {};
+    ['version', 'date', 'source'].forEach((field) => {
+      if (info[field]) meta.appendChild(el('span', null, info[field]));
+    });
+    masthead.appendChild(meta);
+    return masthead;
+  }
+
+  function renderArtifact(data, root) {
+    root.textContent = '';
+    const sheet = el('div', 'sheet');
+    const layout = buildLayout(data);
+    sheet.appendChild(renderMasthead(data));
+    sheet.appendChild(renderGrid(layout));
+    root.appendChild(sheet);
+    return layout;
+  }
+
+  window.JourneyUI = { el, renderArtifact };
+
+  const dataNode = document.getElementById('artifact');
+  const root = document.getElementById('root');
+  const data = JSON.parse(dataNode.textContent);
+  renderArtifact(data, root);
+  document.title = data.title + ' — ' + (data.subtitle || 'Journey');
+})();
 </script>
 </body>
 </html>
