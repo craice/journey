@@ -5,6 +5,8 @@ look at — a single self-contained HTML file that opens by double-click,
 offline, with every implementation claim backed by a verified `file:line` and
 every hole marked as a gap instead of smoothed over.
 
+**[See it working →](https://craice.github.io/journey/)** — two live artifacts, no install.
+
 ## Use it with a coding agent
 
 Point a coding agent at this repository and ask for an artifact:
