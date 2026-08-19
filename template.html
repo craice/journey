@@ -872,14 +872,18 @@ function fitScale(contentWidth, viewportWidth) {
   const dataNode = document.getElementById('artifact');
   const root = document.getElementById('root');
 
-  let data = null;
+  let data;
+  let parseError = null;
   try {
     data = JSON.parse(dataNode.textContent);
   } catch (error) {
-    renderErrors(['The artifact data is not valid JSON: ' + error.message], root);
+    parseError = error;
   }
 
-  if (data) {
+  if (parseError) {
+    renderErrors(['The artifact data is not valid JSON: ' + parseError.message], root);
+    document.title = 'Invalid artifact — Journey';
+  } else {
     const check = validateModel(data);
     if (check.ok) {
       renderArtifact(data, root);
