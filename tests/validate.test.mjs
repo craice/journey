@@ -65,3 +65,11 @@ test('collects every error rather than stopping at the first', () => {
   const { errors } = validateModel({ type: 'flow', title: '', steps: [], lanes: [] });
   assert.ok(errors.length >= 4, `expected several errors, got ${errors.length}`);
 });
+
+test('the loader preserves undefined-valued keys across the realm boundary', () => {
+  const model = minimal();
+  model.title = undefined;
+  const { ok, errors } = validateModel(model);
+  assert.equal(ok, false);
+  assert.match(errors[0], /title/);
+});

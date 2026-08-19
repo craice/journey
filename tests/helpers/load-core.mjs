@@ -17,15 +17,15 @@ export function loadCore() {
   const context = vm.createContext({ console });
   vm.runInContext(match[1], context, { filename: 'template.html#core' });
 
-  // Wrap functions to ensure their return values are compatible with the test context
-  // by converting through JSON serialization
+  // Wrap functions to rebuild their return values in this realm. Values built inside the vm
+  // carry that realm's prototypes, which assert/strict's deepStrictEqual rejects. structuredClone
+  // rebuilds them in this realm without JSON's lossiness (which drops undefined keys, NaNs, etc).
   const wrapped = {};
   for (const key in context) {
     if (typeof context[key] === 'function') {
       wrapped[key] = (...args) => {
         const result = context[key](...args);
-        // Convert through JSON to ensure test assertions work
-        return JSON.parse(JSON.stringify(result));
+        return structuredClone(result);
       };
     } else {
       wrapped[key] = context[key];
