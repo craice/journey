@@ -78,6 +78,19 @@ body {
 .toolbar button:hover { border-color: var(--ink); }
 .toolbar button[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
 .toolbar button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.toolbar__select {
+  font: inherit;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  padding: 4px 6px;
+  cursor: pointer;
+}
+.toolbar__select:hover { border-color: var(--ink); }
+.toolbar__select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .summary {
   position: sticky;
@@ -230,6 +243,8 @@ body {
 .emotion__svg { display: block; width: 100%; height: 76px; overflow: visible; }
 .emotion__axis { stroke: #cfcfcf; stroke-width: 1; stroke-dasharray: 2 3; }
 .emotion__line { fill: none; stroke: var(--ink); stroke-width: 1; }
+.lane-band { display: none; }
+.emotion__area { fill: none; }
 .emotion__dot { fill: var(--ink); }
 .emotion__dot--flag { fill: var(--accent); }
 .emotion__label {
@@ -248,6 +263,89 @@ body {
 }
 .errors h2 { font-size: 13px; letter-spacing: -0.01em; margin: 0 0 10px; }
 .errors ul { margin: 0; padding-left: 18px; }
+
+/* ==========================================================================
+   Blocks — the classic service blueprint: every cell is a card, the lanes are
+   told apart by tint, and the divider lines are dashed and labelled. The rule
+   that carries the grid in Paper is replaced by the card's own border, so the
+   filler cells that keep that rule unbroken become dashed ghosts instead:
+   an empty column reads as a vacancy rather than as a continuous line.
+   ========================================================================== */
+
+[data-theme="blocks"] .grid { gap: 8px; }
+[data-theme="blocks"] .col-head { border-bottom: 0; padding-bottom: 2px; }
+[data-theme="blocks"] .col-head--corner { border-bottom: 0; }
+[data-theme="blocks"] .lane-label { border-bottom: 0; display: flex; align-items: center; }
+[data-theme="blocks"] .cell {
+  border: 1px solid #dcdcdc;
+  background: #fbfbfa;
+  padding: 10px 12px;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+[data-theme="blocks"] .cell--lane-0 { background: #f4f4f2; border-color: #dedede; }
+[data-theme="blocks"] .cell--lane-1 { background: #fdf9e7; border-color: #e8dfae; }
+[data-theme="blocks"] .cell--lane-2 { background: #eef4fb; border-color: #c9dcee; }
+[data-theme="blocks"] .cell--lane-3 { background: #eef7ef; border-color: #c8e2cb; }
+[data-theme="blocks"] .cell--lane-4 { background: #f6f1f8; border-color: #ddcde4; }
+[data-theme="blocks"] .cell--blank { background: transparent; border: 1px dashed #ececec; }
+[data-theme="blocks"] .cell--flag-gap,
+[data-theme="blocks"] .cell--flag-risk {
+  background: #fdeeec;
+  border-color: var(--accent);
+  border-left-width: 3px;
+}
+[data-theme="blocks"] .cell__flag { display: block; margin-bottom: 2px; }
+[data-theme="blocks"] .divider { border-top: 1px dashed var(--ink-soft); margin-top: 4px; }
+[data-theme="blocks"] .emotion { border-bottom: 0; }
+
+/* ==========================================================================
+   Bands — the sectioned journey map: each lane is announced by a full-width
+   band instead of a label in the margin, so the left column collapses to
+   nothing and the phases sit under a solid header. The emotion lane fills the
+   area under its curve, which is why the renderer always draws that polygon.
+   ========================================================================== */
+
+[data-theme="bands"] {
+  --lane-w: 0px;
+  --brand: #20505c;
+  --rule: #edf0f1;
+}
+[data-theme="bands"] .lane-label { display: none; }
+[data-theme="bands"] .lane-band {
+  display: block;
+  grid-column: 1 / -1;
+  background: #eef3f4;
+  color: var(--brand);
+  font-size: var(--type-small);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  margin-top: 10px;
+  position: sticky;
+  left: 0;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+[data-theme="bands"] .col-head {
+  background: var(--brand);
+  color: #fff;
+  border-bottom: 0;
+  padding: 9px 12px;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+[data-theme="bands"] .col-head__num { color: #9fc0c9; }
+/* The corner sits in a zero-width column here, so its padding would still give
+   it 24px of body and its sticky background would cover the first phase number. */
+[data-theme="bands"] .col-head--corner { background: var(--brand); padding: 0; }
+[data-theme="bands"] .cell { padding: 12px; }
+[data-theme="bands"] .divider { border-top: 0; margin: 0; }
+[data-theme="bands"] .divider__label { display: none; }
+[data-theme="bands"] .emotion__area { fill: var(--brand); opacity: 0.10; }
+[data-theme="bands"] .emotion__line { stroke: var(--brand); stroke-width: 2; }
+[data-theme="bands"] .emotion__dot { fill: var(--brand); }
+[data-theme="bands"] .emotion__svg { height: 96px; }
 
 @media print {
   .toolbar { display: none; }
@@ -418,6 +516,7 @@ body {
 
 const ARTIFACT_TYPES = ['blueprint', 'journey'];
 const LANE_KINDS = ['cards', 'emotion'];
+const THEMES = ['paper', 'blocks', 'bands'];
 
 function isFilledString(value) {
   return typeof value === 'string' && value.trim().length > 0;
@@ -435,6 +534,11 @@ function validateModel(data) {
     );
   }
   if (!isFilledString(data.title)) errors.push('The artifact needs a non-empty "title".');
+  if (data.theme !== undefined && !THEMES.includes(data.theme)) {
+    errors.push(
+      `Unknown theme ${JSON.stringify(data.theme)}. Supported themes: ${THEMES.join(', ')}.`
+    );
+  }
 
   const steps = Array.isArray(data.steps) ? data.steps : [];
   const lanes = Array.isArray(data.lanes) ? data.lanes : [];
@@ -701,8 +805,9 @@ const MIN_SCALE = 0.4;
     return node;
   }
 
-  function renderCell(cell) {
+  function renderCell(cell, laneIndex) {
     const node = el('div', 'cell');
+    node.classList.add('cell--lane-' + (laneIndex % 5));
     node.dataset.key = cell.key;
     node.style.gridColumn = `${cell.colStart + 1} / span ${cell.colSpan}`;
     if (cell.flag) node.classList.add(`cell--flag-${cell.flag}`);
@@ -747,6 +852,29 @@ const MIN_SCALE = 0.4;
     });
   }
 
+  const THEME_LABELS = [['paper', 'Paper'], ['blocks', 'Blocks'], ['bands', 'Bands']];
+
+  /** The artifact's own theme is whatever its JSON declares; the select changes
+      what you are looking at now and is deliberately not remembered — the file
+      stays the whole program, with no state hidden beside it. */
+  function renderThemeSelect(current) {
+    const select = document.createElement('select');
+    select.className = 'toolbar__select';
+    select.setAttribute('aria-label', 'Theme');
+    THEME_LABELS.forEach(([value, label]) => {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = label;
+      if (value === current) option.selected = true;
+      select.appendChild(option);
+    });
+    select.addEventListener('change', () => {
+      document.documentElement.dataset.theme = select.value;
+      redrawEmotionLanes();
+    });
+    return select;
+  }
+
   function renderToolbar() {
     const bar = el('div', 'toolbar');
 
@@ -758,6 +886,8 @@ const MIN_SCALE = 0.4;
       button.addEventListener('click', () => setAddressMode(mode, bar));
       bar.appendChild(button);
     });
+
+    bar.appendChild(renderThemeSelect(document.documentElement.dataset.theme || 'paper'));
 
     const print = el('button', null, 'Print');
     print.type = 'button';
@@ -779,6 +909,9 @@ const MIN_SCALE = 0.4;
     });
 
     layout.rows.forEach((row, rowIndex) => {
+      // Both lane treatments are emitted and the theme chooses: Paper and Blocks
+      // read the label in the left column, Bands reads it as a full-width band.
+      grid.appendChild(el('div', 'lane-band', row.label));
       grid.appendChild(el('div', 'lane-label', row.label));
 
       if (row.kind === 'emotion') {
@@ -792,9 +925,10 @@ const MIN_SCALE = 0.4;
         // is to the left of the cursor starts a new row — which would drop a
         // filler onto a row of its own instead of into the hole it exists to fill.
         const pieces = row.cells
-          .map((cell) => ({ column: cell.colStart, node: renderCell(cell) }))
+          .map((cell) => ({ column: cell.colStart, node: renderCell(cell, rowIndex) }))
           .concat(row.fillers.map((filler) => {
             const blank = el('div', 'cell cell--blank');
+            blank.classList.add('cell--lane-' + (rowIndex % 5));
             blank.style.gridColumn = `${filler.colStart + 1} / span ${filler.colSpan}`;
             return { column: filler.colStart, node: blank };
           }))
@@ -908,6 +1042,16 @@ const MIN_SCALE = 0.4;
 
     const points = sparklinePoints(row.cells, columns.length, box);
     if (points.length > 1) {
+      // Filled only by themes that ask for it (see .emotion__area); Paper leaves
+      // it transparent so the lane stays a hairline sparkline.
+      canvas.appendChild(svg('polygon', {
+        class: 'emotion__area',
+        points: `0,${box.height} 0,${points[0].y} ` +
+          points.map((point) => `${point.x},${point.y}`).join(' ') +
+          ` ${box.width},${points[points.length - 1].y} ${box.width},${box.height}`
+      }));
+    }
+    if (points.length > 1) {
       canvas.appendChild(svg('polyline', {
         class: 'emotion__line',
         points: points.map((point) => `${point.x},${point.y}`).join(' ')
@@ -1011,6 +1155,7 @@ const MIN_SCALE = 0.4;
   }
 
   function renderArtifact(data, root) {
+    document.documentElement.dataset.theme = data.theme || 'paper';
     root.textContent = '';
     const sheet = el('div', 'sheet');
     const layout = buildLayout(data);

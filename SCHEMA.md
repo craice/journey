@@ -29,6 +29,7 @@ generating this block, by hand or by tool, must escape any occurrence as `<\/scr
 |---|---|---|---|
 | `type` | `"blueprint" \| "journey"` | yes | Must be one of these two values. |
 | `title` | string | yes | Must be non-empty (after trimming). Used as the page `<h1>` and browser tab title. |
+| `theme` | string | no | `paper` (default), `blocks` or `bands`. Sets which layout the artifact opens in; the reader can switch with the toolbar's select, and that choice is not saved back to the file. |
 | `subtitle` | string | no | Shown next to the title in the masthead; falls back to "Journey" in the tab title if absent. |
 | `meta.version` | string | no | Shown in the masthead if present. Not validated. |
 | `meta.date` | string | no | Shown in the masthead if present. Not validated. |
