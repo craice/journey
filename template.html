@@ -187,8 +187,8 @@ body {
 }
 .emotion__dot.cell--target { animation: dot-flash 1.2s ease-out; }
 @keyframes dot-flash {
-  from { stroke: var(--accent); stroke-width: 7; stroke-opacity: 0.35; }
-  to   { stroke: var(--accent); stroke-width: 0; stroke-opacity: 0; }
+  from { stroke: var(--accent); stroke-width: 0; stroke-opacity: 0.6; }
+  to   { stroke: var(--accent); stroke-width: 7; stroke-opacity: 0; }
 }
 
 .divider {
@@ -547,8 +547,12 @@ function fitScale(contentWidth, viewportWidth) {
 
   const ZOOM_LEVELS = [1, 0.75, 0.5];
   let toolbarNode = null;
+  let currentZoom = 1;
+  let currentLayout = null;
+  let zoomBeforePrint = null;
 
   function setZoom(value) {
+    currentZoom = value;
     document.documentElement.style.setProperty('--zoom', String(value));
     if (!toolbarNode) return;
     toolbarNode.querySelectorAll('button[data-zoom]').forEach((button) => {
@@ -558,11 +562,56 @@ function fitScale(contentWidth, viewportWidth) {
 
   function applyFit() {
     const grid = document.querySelector('.grid');
-    if (!grid) return;
+    const sheet = document.querySelector('.sheet');
+    if (!grid || !sheet) return;
     document.documentElement.style.setProperty('--zoom', '1');
     const contentWidth = grid.scrollWidth;
-    setZoom(fitScale(contentWidth, document.documentElement.clientWidth - 72));
+    // Read the sheet's own left+right padding rather than hard-coding it, so this
+    // stays correct if .sheet's padding in <style id="theme"> ever changes.
+    const sheetStyle = getComputedStyle(sheet);
+    const sheetPadding = parseFloat(sheetStyle.paddingLeft) + parseFloat(sheetStyle.paddingRight);
+    setZoom(fitScale(contentWidth, document.documentElement.clientWidth - sheetPadding));
   }
+
+  // Letter landscape (279.4mm) minus the 12mm @page margins on each side, at 96dpi.
+  // Letter is narrower than A4 landscape, so a width that fits Letter fits both.
+  const PRINT_WIDTH_PX = 960;
+
+  /** Redraws every emotion lane from the current layout. Used after a zoom change
+      that ResizeObserver has not yet reacted to (its callback is asynchronous),
+      most notably right before window.print(), which runs synchronously and would
+      otherwise snapshot a sparkline still sized for the pre-print layout. */
+  function redrawEmotionLanes() {
+    if (!currentLayout) return;
+    document.querySelectorAll('[data-emotion-row]').forEach((holder) => {
+      const rowIndex = Number(holder.dataset.emotionRow);
+      const row = currentLayout.rows[rowIndex];
+      if (row) drawEmotion(holder, row, currentLayout.columns.length);
+    });
+  }
+
+  /** Fits the artifact to the printable page width (not the browser viewport,
+      which has nothing to do with the paper size the @page rule requests) and
+      redraws the emotion lanes synchronously so print sees current geometry. */
+  function preparePrint() {
+    zoomBeforePrint = currentZoom;
+    const grid = document.querySelector('.grid');
+    if (grid) {
+      document.documentElement.style.setProperty('--zoom', '1');
+      const contentWidth = grid.scrollWidth;
+      // fitScale floors at 0.4: a sufficiently wide artifact will still overflow
+      // the page rather than shrink to unreadably small type. Deliberate, not a bug.
+      setZoom(fitScale(contentWidth, PRINT_WIDTH_PX));
+    }
+    redrawEmotionLanes();
+  }
+
+  window.addEventListener('afterprint', () => {
+    if (zoomBeforePrint === null) return;
+    setZoom(zoomBeforePrint);
+    redrawEmotionLanes();
+    zoomBeforePrint = null;
+  });
 
   function renderToolbar() {
     const bar = el('div', 'toolbar');
@@ -582,7 +631,7 @@ function fitScale(contentWidth, viewportWidth) {
 
     const print = el('button', null, 'Print');
     print.type = 'button';
-    print.addEventListener('click', () => { applyFit(); window.print(); });
+    print.addEventListener('click', () => { preparePrint(); window.print(); });
     bar.appendChild(print);
 
     toolbarNode = bar;
@@ -744,7 +793,7 @@ function fitScale(contentWidth, viewportWidth) {
   }
 
   function scrollToCell(key) {
-    const target = document.querySelector(`[data-key="${key}"]`);
+    const target = document.querySelector(`[data-key="${CSS.escape(key)}"]`);
     if (!target) return;
     target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
     target.classList.remove('cell--target');
@@ -781,6 +830,7 @@ function fitScale(contentWidth, viewportWidth) {
     root.textContent = '';
     const sheet = el('div', 'sheet');
     const layout = buildLayout(data);
+    currentLayout = layout;
     sheet.appendChild(renderMasthead(data));
     const summary = renderSummary(layout);
     if (summary) sheet.appendChild(summary);
