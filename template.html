@@ -194,6 +194,11 @@ function buildLayout(data) {
   return { columns, rows, dividers };
 }
 
+/** Formats an emotion score with an explicit sign. */
+function formatScore(score) {
+  return score > 0 ? `+${score}` : String(score);
+}
+
 /** Gathers every flagged cell for the summary band, ordered left to right. */
 function collectFlags(layout) {
   const counts = { gap: 0, risk: 0 };
@@ -210,8 +215,8 @@ function collectFlags(layout) {
         key: cell.key,
         flag: cell.flag,
         laneLabel: row.label,
-        stepLabel: stepLabelOf.get(cell.step) || cell.step,
-        text: row.kind === 'emotion' ? cell.scoreLabel : cell.text,
+        stepLabel: stepLabelOf.get(cell.step),
+        text: row.kind === 'emotion' ? (cell.scoreLabel || formatScore(cell.score)) : cell.text,
         note: cell.note
       });
     });

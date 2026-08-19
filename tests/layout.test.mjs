@@ -158,3 +158,50 @@ test('includes flagged emotion cells using their score label as text', () => {
   assert.equal(item.text, 'Anxious');
   assert.equal(summary.counts.gap, 2);
 });
+
+test('formats score as text when flagged emotion cell has no label', () => {
+  const data = flagged();
+  data.lanes.push({
+    id: 'emotion', label: 'Emotion', kind: 'emotion',
+    cells: [{ step: 'pay', score: -3, flag: 'gap' }]
+  });
+  const summary = collectFlags(buildLayout(data));
+  const item = summary.items.find((entry) => entry.key === 'emotion:pay');
+  assert.equal(item.text, '-3');
+});
+
+test('formats zero score as text when flagged emotion cell has no label', () => {
+  const data = flagged();
+  data.lanes.push({
+    id: 'emotion', label: 'Emotion', kind: 'emotion',
+    cells: [{ step: 'pay', score: 0, flag: 'gap' }]
+  });
+  const summary = collectFlags(buildLayout(data));
+  const item = summary.items.find((entry) => entry.key === 'emotion:pay');
+  assert.equal(item.text, '0');
+});
+
+test('orders items by row when in the same column', () => {
+  // Create data with two flagged cells in the same column
+  const data = {
+    type: 'blueprint',
+    title: 'Test',
+    steps: [
+      { id: 'step1', label: 'Step 1' },
+      { id: 'step2', label: 'Step 2' }
+    ],
+    lanes: [
+      {
+        id: 'lane1', label: 'Lane 1', kind: 'cards',
+        cells: [{ step: 'step1', text: 'First', flag: 'gap' }]
+      },
+      {
+        id: 'lane2', label: 'Lane 2', kind: 'cards',
+        cells: [{ step: 'step1', text: 'Second', flag: 'risk' }]
+      }
+    ]
+  };
+  const summary = collectFlags(buildLayout(data));
+  // Both items are in step1 (column 1), so row order should determine the order
+  assert.deepEqual(summary.items.map((item) => item.key), ['lane1:step1', 'lane2:step1']);
+});
