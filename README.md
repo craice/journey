@@ -63,6 +63,9 @@ curve, Saying and Opportunities lanes.
 - A Route / Code switch: the artifact shows each screen's route by default and
   swaps to the `file:line` behind it on demand, so the whole picture reads as a
   path through the product rather than a tour of the source tree.
+- Three layouts in every artifact — `paper` (hairline grid), `blocks` (the
+  classic bordered service blueprint) and `bands` (sectioned journey map) —
+  switchable from the toolbar without regenerating the file.
 - Columns held to a readable measure, so a few phases on a wide monitor stay a
   grid rather than stretching into empty fields.
 - Print to PDF in landscape, with the interface and the sticky positioning
@@ -78,7 +81,9 @@ curve, Saying and Opportunities lanes.
 
 ## Design notes
 
-Swiss pure-grid layout, one accent colour, system fonts only. No
+Swiss pure-grid layout by default, one accent colour, system fonts only. The
+`blocks` and `bands` layouts restate the same data in the two other
+conventions people expect, and travel inside the same file. No
 dependencies, no build step, no network access at runtime — the file that
 opens is the whole program. It prints the same grid it shows on screen, in
 landscape, without redesigning itself for paper — a grid wider than the sheet

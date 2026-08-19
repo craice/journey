@@ -229,3 +229,19 @@ test('accepts a route on a cards cell', () => {
   model.lanes[0].cells = [{ step: 'signup', text: 'Signup form', route: '/signup' }];
   assert.equal(validateModel(model).ok, true);
 });
+
+test('accepts the three supported themes and defaults to none', () => {
+  ['paper', 'blocks', 'bands'].forEach((theme) => {
+    assert.equal(validateModel({ ...minimal(), theme }).ok, true, theme);
+  });
+  assert.equal(validateModel(minimal()).ok, true, 'theme is optional');
+});
+
+test('rejects an unknown theme and names the supported ones', () => {
+  const { ok, errors } = validateModel({ ...minimal(), theme: 'swiss' });
+  assert.equal(ok, false);
+  assert.match(errors[0], /"swiss"/);
+  assert.match(errors[0], /paper/);
+  assert.match(errors[0], /blocks/);
+  assert.match(errors[0], /bands/);
+});
