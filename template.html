@@ -83,32 +83,40 @@ function validateModel(data) {
 
     cells.forEach((cell, cellIndex) => {
       const where = `cell #${cellIndex + 1} in lane ${laneId}`;
-      if (!stepIndex.has(cell && cell.step)) {
+
+      const hasStep = stepIndex.has(cell && cell.step);
+      if (!hasStep) {
         errors.push(`Unknown step ${JSON.stringify(cell && cell.step)} in lane ${laneId}.`);
-        return;
       }
-      const start = stepIndex.get(cell.step);
+
       const span = cell.span === undefined ? 1 : cell.span;
-      if (!Number.isInteger(span) || span < 1) {
+      const spanValid = Number.isInteger(span) && span >= 1;
+      if (!spanValid) {
         errors.push(`The span of ${where} must be an integer of 1 or more.`);
-        return;
       }
-      if (start + span > steps.length) {
-        errors.push(
-          `The span of ${where} runs past the last step ` +
-          `(starts at step ${start + 1}, spans ${span}, ${steps.length} steps exist).`
-        );
-        return;
-      }
-      for (let column = start; column < start + span; column += 1) {
-        if (occupied.has(column)) {
+
+      if (hasStep && spanValid) {
+        const start = stepIndex.get(cell.step);
+        if (start + span > steps.length) {
           errors.push(
-            `Cells overlap in lane ${laneId} at step ` +
-            `${JSON.stringify(steps[column].id)}.`
+            `The span of ${where} runs past the last step ` +
+            `(starts at step ${start + 1}, spans ${span}, ${steps.length} steps exist).`
           );
-          break;
+        } else {
+          let reported = false;
+          for (let column = start; column < start + span; column += 1) {
+            if (occupied.has(column)) {
+              if (!reported) {
+                errors.push(
+                  `Cells overlap in lane ${laneId} at step ` +
+                  `${JSON.stringify(steps[column].id)}.`
+                );
+                reported = true;
+              }
+            }
+            occupied.set(column, cellIndex);
+          }
         }
-        occupied.set(column, cellIndex);
       }
 
       if (cell.flag !== undefined && !['gap', 'risk'].includes(cell.flag)) {

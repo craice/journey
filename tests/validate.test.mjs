@@ -173,3 +173,35 @@ test('rejects a divider pointing at an unknown lane', () => {
   model.dividers = [{ after: 'frontstage', label: 'Line of interaction' }];
   assert.match(validateModel(model).errors[0], /Unknown lane "frontstage"/);
 });
+
+test('reports multiple overlaps in the same lane', () => {
+  const model = threeSteps();
+  model.lanes[0].cells = [
+    { step: 'discover', text: 'A' },
+    { step: 'discover', text: 'B', span: 2 },
+    { step: 'signup', text: 'C' }
+  ];
+  const { errors } = validateModel(model);
+  const overlapErrors = errors.filter(e => e.includes('overlap'));
+  assert.ok(overlapErrors.length >= 2, `expected at least 2 overlap errors, got ${overlapErrors.length}`);
+});
+
+test('reports both unknown step and invalid flag in the same cell', () => {
+  const model = threeSteps();
+  model.lanes[0].cells = [{ step: 'unknown', text: 'Bad', flag: 'invalid' }];
+  const { errors } = validateModel(model);
+  const stepErrors = errors.filter(e => e.includes('Unknown step'));
+  const flagErrors = errors.filter(e => e.includes('flag'));
+  assert.ok(stepErrors.length > 0, 'expected step error');
+  assert.ok(flagErrors.length > 0, 'expected flag error');
+});
+
+test('reports both out-of-bounds span and invalid flag in the same cell', () => {
+  const model = threeSteps();
+  model.lanes[0].cells = [{ step: 'signup', text: 'Bad', span: 10, flag: 'invalid' }];
+  const { errors } = validateModel(model);
+  const spanErrors = errors.filter(e => e.includes('span') && e.includes('past'));
+  const flagErrors = errors.filter(e => e.includes('flag'));
+  assert.ok(spanErrors.length > 0, 'expected span error');
+  assert.ok(flagErrors.length > 0, 'expected flag error');
+});
