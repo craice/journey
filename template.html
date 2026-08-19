@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Journey Artifact</title>
+<style id="theme">
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="application/json" id="artifact">
+{
+  "type": "blueprint",
+  "title": "Untitled",
+  "steps": [{ "id": "step-1", "label": "Step 1" }],
+  "lanes": [{ "id": "actions", "label": "User actions", "kind": "cards", "cells": [] }]
+}
+</script>
+
+<script id="core">
+/* Pure functions. No DOM access allowed in this block — it is evaluated
+   standalone by the test suite in a node:vm context. */
+
+const ARTIFACT_TYPES = ['blueprint', 'journey'];
+const LANE_KINDS = ['cards', 'emotion'];
+
+function isFilledString(value) {
+  return typeof value === 'string' && value.trim().length > 0;
+}
+
+function validateModel(data) {
+  const errors = [];
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    return { ok: false, errors: ['The artifact data must be an object.'] };
+  }
+
+  if (!ARTIFACT_TYPES.includes(data.type)) {
+    errors.push(
+      `Unknown type ${JSON.stringify(data.type)}. Supported types: ${ARTIFACT_TYPES.join(', ')}.`
+    );
+  }
+  if (!isFilledString(data.title)) errors.push('The artifact needs a non-empty "title".');
+
+  const steps = Array.isArray(data.steps) ? data.steps : [];
+  const lanes = Array.isArray(data.lanes) ? data.lanes : [];
+  if (steps.length === 0) errors.push('The artifact needs at least one step.');
+  if (lanes.length === 0) errors.push('The artifact needs at least one lane.');
+
+  const seenSteps = new Set();
+  steps.forEach((step, index) => {
+    if (!isFilledString(step && step.id)) errors.push(`Step #${index + 1} needs an "id".`);
+    else if (seenSteps.has(step.id)) errors.push(`Duplicate step id ${JSON.stringify(step.id)}.`);
+    else seenSteps.add(step.id);
+    if (!isFilledString(step && step.label)) {
+      errors.push(`Step ${JSON.stringify((step && step.id) || index + 1)} needs a "label".`);
+    }
+  });
+
+  const seenLanes = new Set();
+  lanes.forEach((lane, index) => {
+    if (!isFilledString(lane && lane.id)) errors.push(`Lane #${index + 1} needs an "id".`);
+    else if (seenLanes.has(lane.id)) errors.push(`Duplicate lane id ${JSON.stringify(lane.id)}.`);
+    else seenLanes.add(lane.id);
+    if (!isFilledString(lane && lane.label)) {
+      errors.push(`Lane ${JSON.stringify((lane && lane.id) || index + 1)} needs a "label".`);
+    }
+    if (!LANE_KINDS.includes(lane && lane.kind)) {
+      errors.push(
+        `Lane ${JSON.stringify((lane && lane.id) || index + 1)} has kind ` +
+        `${JSON.stringify(lane && lane.kind)}. Supported kinds: ${LANE_KINDS.join(', ')}.`
+      );
+    }
+  });
+
+  return { ok: errors.length === 0, errors };
+}
+</script>
+
+<script id="ui">
+/* DOM layer. */
+</script>
+</body>
+</html>
