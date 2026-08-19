@@ -7,6 +7,22 @@ every hole marked as a gap instead of smoothed over.
 
 **[See it working →](https://craice.github.io/journey/)** — two live artifacts, no install.
 
+### Service Blueprint
+
+![A Service Blueprint of an onboarding flow: five phases across, five lanes down, with the line of interaction and line of visibility drawn as full rules, two gaps and one risk marked in red.](docs/img/blueprint.png)
+
+Five phases across, five lanes down. The red cells are the point: a screen that
+was never built, a confirmation nothing sends, a handler that swallows its
+errors. Each of the others carries the route or the `file:line` it came from.
+
+### User Journey Map
+
+![A User Journey Map of the same flow: actions, an emotion sparkline dipping to a flagged low at "Waits", quotes, and opportunities.](docs/img/journey.png)
+
+The same flow seen from the outside — what the person does, how it feels, what
+they say, and where the opportunity sits. The sparkline's low point is flagged,
+because the dip and the gap are the same fact told twice.
+
 ## Use it with a coding agent
 
 Point a coding agent at this repository and ask for an artifact:
@@ -19,9 +35,9 @@ The agent fetches [`SKILL.md`](SKILL.md) and follows it:
 curl -sL --fail https://raw.githubusercontent.com/craice/journey/main/SKILL.md -o /tmp/journey-skill.md
 ```
 
-It reads the code, fills each lane from what it actually finds, cites a real
-`file:line` for every claim, and marks anything it can't verify as a gap
-rather than guessing.
+It reads the code, fills each lane from what it actually finds, backs every
+claim with a real route or `file:line`, and marks anything it can't verify as
+a gap rather than guessing.
 
 ## Use it by hand
 
@@ -64,13 +80,14 @@ curve, Saying and Opportunities lanes.
 
 Swiss pure-grid layout, one accent colour, system fonts only. No
 dependencies, no build step, no network access at runtime — the file that
-opens is the whole program. It prints the same grid it shows on screen,
-scaled to the page rather than redesigned for it.
+opens is the whole program. It prints the same grid it shows on screen, in
+landscape, without redesigning itself for paper — a grid wider than the sheet
+is clipped rather than shrunk.
 
 ## Development
 
 ```bash
-node --test tests/          # 67 tests, no npm dependencies of any kind
+node --test tests/          # 74 tests, no npm dependencies of any kind
 node tools/build-examples.js  # regenerates examples/*.html from examples/src/*.json
 ```
 
@@ -79,18 +96,12 @@ The logic in `template.html`'s `<script id="core">` block stays free of
 evaluates that block standalone in an isolated context and throws if it
 touches the DOM. Rendering lives separately, in `<script id="ui">`.
 
-The design spec and implementation plan behind this project are published
-under [`docs/superpowers/`](docs/superpowers/), for anyone curious how it
-got built.
-
 ## Roadmap
 
 - **Flow is deferred to v2.** Real branching isn't expressible in this
   grid model — the only way to draw it here is as parallel lanes, which
   reads worse than an actual flowchart. `blueprint` and `journey` are the
   two shapes v1 supports; nothing here bends the schema to fake a third.
-- **Screenshots are not in yet.** The README currently points at the
-  committed `examples/*.html` files instead of a rendered image.
 
 ## Licence
 
