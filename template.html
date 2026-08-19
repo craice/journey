@@ -155,17 +155,17 @@ function validateModel(data) {
   return { ok: errors.length === 0, errors };
 }
 
-/** Turns a validated model into a grid-ready layout. Assumes validateModel passed. */
+/** Turns a validated model into a grid-ready layout.
+    Relies on validateModel having already passed: data.steps and data.lanes are
+    non-empty arrays, all cell step references are valid, and all divider lane
+    references are valid. This function performs no shape checking of its own. */
 function buildLayout(data) {
-  const steps = Array.isArray(data.steps) ? data.steps : [];
-  const lanes = Array.isArray(data.lanes) ? data.lanes : [];
-  const columnOf = new Map(steps.map((step, index) => [step.id, index + 1]));
+  const columnOf = new Map(data.steps.map((step, index) => [step.id, index + 1]));
 
-  const columns = steps.map((step) => ({ id: step.id, label: step.label }));
+  const columns = data.steps.map((step) => ({ id: step.id, label: step.label }));
 
-  const rows = lanes.map((lane) => {
+  const rows = data.lanes.map((lane) => {
     const cells = (Array.isArray(lane.cells) ? lane.cells : [])
-      .filter((cell) => columnOf.has(cell.step))
       .map((cell) => ({
         step: cell.step,
         key: `${lane.id}:${cell.step}`,
@@ -184,9 +184,8 @@ function buildLayout(data) {
     return { id: lane.id, label: lane.label, kind: lane.kind, cells };
   });
 
-  const laneRowIndex = new Map(lanes.map((lane, index) => [lane.id, index]));
+  const laneRowIndex = new Map(data.lanes.map((lane, index) => [lane.id, index]));
   const dividers = (Array.isArray(data.dividers) ? data.dividers : [])
-    .filter((divider) => laneRowIndex.has(divider.after))
     .map((divider) => ({
       afterRowIndex: laneRowIndex.get(divider.after),
       label: divider.label === undefined ? '' : divider.label
