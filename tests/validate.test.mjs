@@ -73,3 +73,103 @@ test('rejects undefined title', () => {
   assert.equal(ok, false);
   assert.match(errors[0], /title/);
 });
+
+const threeSteps = () => ({
+  type: 'blueprint',
+  title: 'Onboarding',
+  steps: [
+    { id: 'discover', label: 'Discovers' },
+    { id: 'signup', label: 'Signs up' },
+    { id: 'pay', label: 'Pays' }
+  ],
+  lanes: [{ id: 'backstage', label: 'Backstage', kind: 'cards', cells: [] }]
+});
+
+test('rejects a cell pointing at an unknown step', () => {
+  const model = threeSteps();
+  model.lanes[0].cells = [{ step: 'checkout', text: 'Charges the card' }];
+  const { ok, errors } = validateModel(model);
+  assert.equal(ok, false);
+  assert.match(errors[0], /Unknown step "checkout" in lane "backstage"/);
+});
+
+test('requires text on a cards cell', () => {
+  const model = threeSteps();
+  model.lanes[0].cells = [{ step: 'signup', ref: 'api/users.ts:88' }];
+  assert.match(validateModel(model).errors[0], /needs "text"/i);
+});
+
+test('rejects an unknown flag value', () => {
+  const model = threeSteps();
+  model.lanes[0].cells = [{ step: 'signup', text: 'Validates CPF', flag: 'todo' }];
+  assert.match(validateModel(model).errors[0], /flag "todo"/i);
+});
+
+test('accepts gap and risk flags', () => {
+  const model = threeSteps();
+  model.lanes[0].cells = [
+    { step: 'signup', text: 'No error state', flag: 'gap' },
+    { step: 'pay', text: 'Empty catch', flag: 'risk' }
+  ];
+  assert.equal(validateModel(model).ok, true);
+});
+
+test('rejects a span running past the last step', () => {
+  const model = threeSteps();
+  model.lanes[0].cells = [{ step: 'signup', text: 'Long process', span: 3 }];
+  const { ok, errors } = validateModel(model);
+  assert.equal(ok, false);
+  assert.match(errors[0], /span/i);
+});
+
+test('rejects overlapping cells in the same lane', () => {
+  const model = threeSteps();
+  model.lanes[0].cells = [
+    { step: 'discover', text: 'Spans two', span: 2 },
+    { step: 'signup', text: 'Collides' }
+  ];
+  assert.match(validateModel(model).errors[0], /overlap/i);
+});
+
+test('allows the same step in different lanes', () => {
+  const model = threeSteps();
+  model.lanes.push({ id: 'front', label: 'Frontstage', kind: 'cards', cells: [] });
+  model.lanes[0].cells = [{ step: 'signup', text: 'Validates CPF' }];
+  model.lanes[1].cells = [{ step: 'signup', text: 'Shows the form' }];
+  assert.equal(validateModel(model).ok, true);
+});
+
+test('rejects an emotion score outside -3..3 or non-integer', () => {
+  const model = threeSteps();
+  model.lanes[0] = {
+    id: 'emotion', label: 'Emotion', kind: 'emotion',
+    cells: [{ step: 'signup', score: 5 }]
+  };
+  assert.match(validateModel(model).errors[0], /score/i);
+
+  model.lanes[0].cells = [{ step: 'signup', score: 1.5 }];
+  assert.match(validateModel(model).errors[0], /score/i);
+});
+
+test('requires a journey to carry exactly one emotion lane', () => {
+  const model = threeSteps();
+  model.type = 'journey';
+  const { ok, errors } = validateModel(model);
+  assert.equal(ok, false);
+  assert.match(errors[0], /journey.*emotion lane/i);
+});
+
+test('rejects more than one emotion lane', () => {
+  const model = threeSteps();
+  model.lanes = [
+    { id: 'e1', label: 'Emotion', kind: 'emotion', cells: [] },
+    { id: 'e2', label: 'Mood', kind: 'emotion', cells: [] }
+  ];
+  assert.match(validateModel(model).errors[0], /one emotion lane/i);
+});
+
+test('rejects a divider pointing at an unknown lane', () => {
+  const model = threeSteps();
+  model.dividers = [{ after: 'frontstage', label: 'Line of interaction' }];
+  assert.match(validateModel(model).errors[0], /Unknown lane "frontstage"/);
+});

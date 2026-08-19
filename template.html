@@ -74,6 +74,76 @@ function validateModel(data) {
     }
   });
 
+  const stepIndex = new Map(steps.map((step, index) => [step && step.id, index]));
+
+  lanes.forEach((lane) => {
+    const laneId = JSON.stringify((lane && lane.id) || '?');
+    const cells = Array.isArray(lane && lane.cells) ? lane.cells : [];
+    const occupied = new Map();
+
+    cells.forEach((cell, cellIndex) => {
+      const where = `cell #${cellIndex + 1} in lane ${laneId}`;
+      if (!stepIndex.has(cell && cell.step)) {
+        errors.push(`Unknown step ${JSON.stringify(cell && cell.step)} in lane ${laneId}.`);
+        return;
+      }
+      const start = stepIndex.get(cell.step);
+      const span = cell.span === undefined ? 1 : cell.span;
+      if (!Number.isInteger(span) || span < 1) {
+        errors.push(`The span of ${where} must be an integer of 1 or more.`);
+        return;
+      }
+      if (start + span > steps.length) {
+        errors.push(
+          `The span of ${where} runs past the last step ` +
+          `(starts at step ${start + 1}, spans ${span}, ${steps.length} steps exist).`
+        );
+        return;
+      }
+      for (let column = start; column < start + span; column += 1) {
+        if (occupied.has(column)) {
+          errors.push(
+            `Cells overlap in lane ${laneId} at step ` +
+            `${JSON.stringify(steps[column].id)}.`
+          );
+          break;
+        }
+        occupied.set(column, cellIndex);
+      }
+
+      if (cell.flag !== undefined && !['gap', 'risk'].includes(cell.flag)) {
+        errors.push(`The flag ${JSON.stringify(cell.flag)} on ${where} must be "gap" or "risk".`);
+      }
+
+      if (lane.kind === 'emotion') {
+        if (!Number.isInteger(cell.score) || cell.score < -3 || cell.score > 3) {
+          errors.push(`The score of ${where} must be an integer from -3 to 3.`);
+        }
+      } else if (!isFilledString(cell.text)) {
+        errors.push(`The ${where} needs "text".`);
+      }
+    });
+  });
+
+  const emotionLanes = lanes.filter((lane) => lane && lane.kind === 'emotion');
+  if (emotionLanes.length > 1) {
+    errors.push('An artifact may hold at most one emotion lane.');
+  }
+  if (data.type === 'journey' && emotionLanes.length !== 1) {
+    errors.push('A journey needs exactly one emotion lane.');
+  }
+
+  const laneIds = new Set(lanes.map((lane) => lane && lane.id));
+  const dividers = Array.isArray(data.dividers) ? data.dividers : [];
+  dividers.forEach((divider, index) => {
+    if (!laneIds.has(divider && divider.after)) {
+      errors.push(
+        `Unknown lane ${JSON.stringify(divider && divider.after)} ` +
+        `in divider #${index + 1}.`
+      );
+    }
+  });
+
   return { ok: errors.length === 0, errors };
 }
 </script>
