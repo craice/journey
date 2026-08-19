@@ -540,6 +540,50 @@ function fitScale(contentWidth, viewportWidth) {
     return node;
   }
 
+  const ZOOM_LEVELS = [1, 0.75, 0.5];
+  let toolbarNode = null;
+
+  function setZoom(value) {
+    document.documentElement.style.setProperty('--zoom', String(value));
+    if (!toolbarNode) return;
+    toolbarNode.querySelectorAll('button[data-zoom]').forEach((button) => {
+      button.setAttribute('aria-pressed', String(Number(button.dataset.zoom) === value));
+    });
+  }
+
+  function applyFit() {
+    const grid = document.querySelector('.grid');
+    if (!grid) return;
+    document.documentElement.style.setProperty('--zoom', '1');
+    const contentWidth = grid.scrollWidth;
+    setZoom(fitScale(contentWidth, document.documentElement.clientWidth - 72));
+  }
+
+  function renderToolbar() {
+    const bar = el('div', 'toolbar');
+    ZOOM_LEVELS.forEach((level) => {
+      const button = el('button', null, `${Math.round(level * 100)}%`);
+      button.type = 'button';
+      button.dataset.zoom = String(level);
+      button.setAttribute('aria-pressed', String(level === 1));
+      button.addEventListener('click', () => setZoom(level));
+      bar.appendChild(button);
+    });
+
+    const fit = el('button', null, 'Fit');
+    fit.type = 'button';
+    fit.addEventListener('click', applyFit);
+    bar.appendChild(fit);
+
+    const print = el('button', null, 'Print');
+    print.type = 'button';
+    print.addEventListener('click', () => { applyFit(); window.print(); });
+    bar.appendChild(print);
+
+    toolbarNode = bar;
+    return bar;
+  }
+
   function renderGrid(layout) {
     const grid = el('div', 'grid');
     grid.style.setProperty('--cols', String(layout.columns.length));
@@ -585,6 +629,7 @@ function fitScale(contentWidth, viewportWidth) {
       if (info[field]) meta.appendChild(el('span', null, info[field]));
     });
     masthead.appendChild(meta);
+    masthead.appendChild(renderToolbar());
     return masthead;
   }
 
