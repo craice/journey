@@ -1,0 +1,56 @@
+{
+  "type": "journey",
+  "title": "Onboarding",
+  "subtitle": "User Journey Map",
+  "meta": { "version": "v1", "date": "2026-08-19", "source": "acme/app@a1b2c3d" },
+  "steps": [
+    { "id": "discover", "label": "Discovers" },
+    { "id": "signup", "label": "Signs up" },
+    { "id": "pay", "label": "Pays" },
+    { "id": "wait", "label": "Waits" },
+    { "id": "activate", "label": "Activates" }
+  ],
+  "lanes": [
+    {
+      "id": "actions", "label": "Actions", "kind": "cards",
+      "cells": [
+        { "step": "discover", "text": "Opens the invite link" },
+        { "step": "signup", "text": "Fills in name and document" },
+        { "step": "pay", "text": "Scans the code and pays" },
+        { "step": "wait", "text": "Refreshes the page" },
+        { "step": "activate", "text": "Creates the first project" }
+      ]
+    },
+    {
+      "id": "emotion", "label": "Emotion", "kind": "emotion",
+      "cells": [
+        { "step": "discover", "score": 2, "label": "Curious" },
+        { "step": "signup", "score": 0, "label": "Hesitant" },
+        { "step": "pay", "score": -1, "label": "Cautious" },
+        { "step": "wait", "score": -3, "label": "Anxious", "flag": "gap" },
+        { "step": "activate", "score": 3, "label": "Relieved" }
+      ]
+    },
+    {
+      "id": "quotes", "label": "Saying", "kind": "cards",
+      "cells": [
+        { "step": "discover", "text": "\"A teammate sent me this\"" },
+        { "step": "signup", "text": "\"Why do you need my document?\"" },
+        { "step": "pay", "text": "\"Fine, this part is quick\"" },
+        { "step": "wait", "text": "\"Did it go through? I can't tell\"" },
+        { "step": "activate", "text": "\"There we go\"" }
+      ]
+    },
+    {
+      "id": "opportunities", "label": "Opportunities", "kind": "cards",
+      "cells": [
+        { "step": "signup", "text": "Explain why the document is needed", "ref": "app/signup/form.tsx:41" },
+        {
+          "step": "wait", "text": "No pending or confirmation state", "flag": "gap",
+          "note": "Nothing in the UI or by email tells the user the charge cleared"
+        }
+      ]
+    }
+  ],
+  "dividers": [{ "after": "emotion", "label": "Line of experience" }]
+}

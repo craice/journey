@@ -1,0 +1,1015 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Journey Artifact</title>
+<style id="theme">
+:root {
+  --zoom: 1;
+  --col-w: calc(232px * var(--zoom));
+  --lane-w: calc(124px * var(--zoom));
+  --ink: #111;
+  --ink-soft: #8a8a8a;
+  --ink-faint: #b5b5b5;
+  --rule: #e3e3e3;
+  --accent: #e2231a;
+  --paper: #fff;
+  --type: calc(13px * var(--zoom));
+  --type-small: calc(9px * var(--zoom));
+  --type-mono: calc(10px * var(--zoom));
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "Helvetica Neue", Arial, system-ui, sans-serif;
+  font-feature-settings: "tnum";
+  -webkit-font-smoothing: antialiased;
+}
+
+.sheet {
+  margin-top: 32px;
+  padding: 0 36px 64px;
+  width: max-content;
+  min-width: 100%;
+}
+.sheet::before {
+  content: "";
+  display: block;
+  border-top: 3px solid var(--ink);
+  margin-bottom: 8px;
+}
+
+.masthead {
+  display: flex;
+  align-items: baseline;
+  gap: 24px;
+  margin-bottom: 20px;
+  position: sticky;
+  left: 0;
+  width: max-content;
+}
+.masthead h1 { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
+.masthead .meta {
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  display: flex;
+  gap: 18px;
+}
+
+.toolbar { display: flex; gap: 6px; align-items: center; }
+.toolbar button {
+  font: inherit;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: none;
+  border: 1px solid var(--rule);
+  padding: 4px 9px;
+  cursor: pointer;
+}
+.toolbar button:hover { border-color: var(--ink); }
+.toolbar button[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.toolbar button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.summary {
+  position: sticky;
+  left: 0;
+  width: max-content;
+  max-width: 100%;
+  margin-bottom: 22px;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.summary__count { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-soft); }
+.summary__list { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 4px; }
+.summary__item {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  text-align: left;
+  color: var(--ink);
+  cursor: pointer;
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+.summary__item:hover { color: var(--accent); }
+.summary__item::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  background: var(--accent);
+  transform: translateY(-1px);
+}
+.summary__item--risk::before { background: none; border: 1px solid var(--accent); }
+.summary__where { color: var(--ink-soft); }
+
+.grid {
+  display: grid;
+  grid-template-columns: var(--lane-w) repeat(var(--cols), minmax(var(--col-w), 1fr));
+  align-items: stretch;
+}
+
+.col-head, .lane-label, .cell {
+  font-size: var(--type);
+  line-height: 1.45;
+  padding: 11px 16px 13px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.col-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--paper);
+  border-bottom: 1px solid var(--ink);
+  font-size: var(--type-small);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding-bottom: 6px;
+}
+.col-head__num { color: var(--ink-faint); margin-right: 7px; }
+
+.lane-label {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--paper);
+  font-size: var(--type-small);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  padding-right: 24px;
+}
+.col-head--corner { position: sticky; left: 0; top: 0; z-index: 3; background: var(--paper); border-bottom-color: var(--ink); }
+
+.cell__ref {
+  display: block;
+  margin-top: 6px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: var(--type-mono);
+  letter-spacing: 0;
+  color: var(--ink-soft);
+}
+.cell__note { display: block; margin-top: 5px; color: var(--ink-soft); }
+.cell__flag {
+  display: inline-block;
+  font-size: var(--type-small);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-right: 8px;
+}
+.cell__flag::before {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  background: var(--accent);
+  margin-right: 6px;
+  transform: translateY(0);
+}
+.cell--flag-risk .cell__flag::before { background: none; border: 1px solid var(--accent); }
+.cell.cell--target { animation: flash 1.2s ease-out; }
+@keyframes flash {
+  from { background: #fdece9; }
+  to { background: transparent; }
+}
+.emotion__dot.cell--target { animation: dot-flash 1.2s ease-out; }
+@keyframes dot-flash {
+  from { stroke: var(--accent); stroke-width: 0; stroke-opacity: 0.6; }
+  to   { stroke: var(--accent); stroke-width: 7; stroke-opacity: 0; }
+}
+
+.divider {
+  grid-column: 1 / -1;
+  border-top: 1px solid var(--ink);
+  margin: 2px 0 0;
+}
+.divider__label {
+  grid-column: 1 / -1;
+  font-size: 8px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  padding: 3px 0 6px;
+  position: sticky;
+  left: 0;
+}
+
+.emotion { position: relative; padding: 0; border-bottom: 1px solid var(--rule); }
+.emotion__svg { display: block; width: 100%; height: calc(76px * var(--zoom)); overflow: visible; }
+.emotion__axis { stroke: #cfcfcf; stroke-width: 1; stroke-dasharray: 2 3; }
+.emotion__line { fill: none; stroke: var(--ink); stroke-width: 1; }
+.emotion__dot { fill: var(--ink); }
+.emotion__dot--flag { fill: var(--accent); }
+.emotion__label {
+  font-size: 8px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  fill: var(--ink-soft);
+}
+
+.errors {
+  border: 1px solid var(--accent);
+  padding: 20px 22px;
+  max-width: 680px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.errors h2 { font-size: 13px; letter-spacing: -0.01em; margin: 0 0 10px; }
+.errors ul { margin: 0; padding-left: 18px; }
+.errors code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px; }
+
+@media print {
+  .toolbar { display: none; }
+  body { background: #fff; }
+  .sheet { padding: 0; width: auto; min-width: 0; }
+  .masthead, .summary, .lane-label, .col-head, .divider__label { position: static; width: auto; }
+  .cell, .col-head, .lane-label { break-inside: avoid; }
+  .summary__item { color: #111; }
+}
+@page { size: landscape; margin: 12mm; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="application/json" id="artifact">
+{
+  "type": "journey",
+  "title": "Onboarding",
+  "subtitle": "User Journey Map",
+  "meta": {
+    "version": "v1",
+    "date": "2026-08-19",
+    "source": "acme/app@a1b2c3d"
+  },
+  "steps": [
+    {
+      "id": "discover",
+      "label": "Discovers"
+    },
+    {
+      "id": "signup",
+      "label": "Signs up"
+    },
+    {
+      "id": "pay",
+      "label": "Pays"
+    },
+    {
+      "id": "wait",
+      "label": "Waits"
+    },
+    {
+      "id": "activate",
+      "label": "Activates"
+    }
+  ],
+  "lanes": [
+    {
+      "id": "actions",
+      "label": "Actions",
+      "kind": "cards",
+      "cells": [
+        {
+          "step": "discover",
+          "text": "Opens the invite link"
+        },
+        {
+          "step": "signup",
+          "text": "Fills in name and document"
+        },
+        {
+          "step": "pay",
+          "text": "Scans the code and pays"
+        },
+        {
+          "step": "wait",
+          "text": "Refreshes the page"
+        },
+        {
+          "step": "activate",
+          "text": "Creates the first project"
+        }
+      ]
+    },
+    {
+      "id": "emotion",
+      "label": "Emotion",
+      "kind": "emotion",
+      "cells": [
+        {
+          "step": "discover",
+          "score": 2,
+          "label": "Curious"
+        },
+        {
+          "step": "signup",
+          "score": 0,
+          "label": "Hesitant"
+        },
+        {
+          "step": "pay",
+          "score": -1,
+          "label": "Cautious"
+        },
+        {
+          "step": "wait",
+          "score": -3,
+          "label": "Anxious",
+          "flag": "gap"
+        },
+        {
+          "step": "activate",
+          "score": 3,
+          "label": "Relieved"
+        }
+      ]
+    },
+    {
+      "id": "quotes",
+      "label": "Saying",
+      "kind": "cards",
+      "cells": [
+        {
+          "step": "discover",
+          "text": "\"A teammate sent me this\""
+        },
+        {
+          "step": "signup",
+          "text": "\"Why do you need my document?\""
+        },
+        {
+          "step": "pay",
+          "text": "\"Fine, this part is quick\""
+        },
+        {
+          "step": "wait",
+          "text": "\"Did it go through? I can't tell\""
+        },
+        {
+          "step": "activate",
+          "text": "\"There we go\""
+        }
+      ]
+    },
+    {
+      "id": "opportunities",
+      "label": "Opportunities",
+      "kind": "cards",
+      "cells": [
+        {
+          "step": "signup",
+          "text": "Explain why the document is needed",
+          "ref": "app/signup/form.tsx:41"
+        },
+        {
+          "step": "wait",
+          "text": "No pending or confirmation state",
+          "flag": "gap",
+          "note": "Nothing in the UI or by email tells the user the charge cleared"
+        }
+      ]
+    }
+  ],
+  "dividers": [
+    {
+      "after": "emotion",
+      "label": "Line of experience"
+    }
+  ]
+}
+</script>
+
+<script id="core">
+/* Pure functions. No DOM access allowed in this block — it is evaluated
+   standalone by the test suite in a node:vm context. */
+
+const ARTIFACT_TYPES = ['blueprint', 'journey'];
+const LANE_KINDS = ['cards', 'emotion'];
+
+function isFilledString(value) {
+  return typeof value === 'string' && value.trim().length > 0;
+}
+
+function validateModel(data) {
+  const errors = [];
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    return { ok: false, errors: ['The artifact data must be an object.'] };
+  }
+
+  if (!ARTIFACT_TYPES.includes(data.type)) {
+    errors.push(
+      `Unknown type ${JSON.stringify(data.type)}. Supported types: ${ARTIFACT_TYPES.join(', ')}.`
+    );
+  }
+  if (!isFilledString(data.title)) errors.push('The artifact needs a non-empty "title".');
+
+  const steps = Array.isArray(data.steps) ? data.steps : [];
+  const lanes = Array.isArray(data.lanes) ? data.lanes : [];
+  if (steps.length === 0) errors.push('The artifact needs at least one step.');
+  if (lanes.length === 0) errors.push('The artifact needs at least one lane.');
+
+  const seenSteps = new Set();
+  steps.forEach((step, index) => {
+    if (!isFilledString(step && step.id)) errors.push(`Step #${index + 1} needs an "id".`);
+    else if (seenSteps.has(step.id)) errors.push(`Duplicate step id ${JSON.stringify(step.id)}.`);
+    else seenSteps.add(step.id);
+    if (!isFilledString(step && step.label)) {
+      errors.push(`Step ${JSON.stringify((step && step.id) || index + 1)} needs a "label".`);
+    }
+  });
+
+  const seenLanes = new Set();
+  lanes.forEach((lane, index) => {
+    if (!isFilledString(lane && lane.id)) errors.push(`Lane #${index + 1} needs an "id".`);
+    else if (seenLanes.has(lane.id)) errors.push(`Duplicate lane id ${JSON.stringify(lane.id)}.`);
+    else seenLanes.add(lane.id);
+    if (!isFilledString(lane && lane.label)) {
+      errors.push(`Lane ${JSON.stringify((lane && lane.id) || index + 1)} needs a "label".`);
+    }
+    if (!LANE_KINDS.includes(lane && lane.kind)) {
+      errors.push(
+        `Lane ${JSON.stringify((lane && lane.id) || index + 1)} has kind ` +
+        `${JSON.stringify(lane && lane.kind)}. Supported kinds: ${LANE_KINDS.join(', ')}.`
+      );
+    }
+  });
+
+  const stepIndex = new Map(steps.map((step, index) => [step && step.id, index]));
+
+  lanes.forEach((lane) => {
+    const laneId = JSON.stringify((lane && lane.id) || '?');
+    const cells = Array.isArray(lane && lane.cells) ? lane.cells : [];
+    const occupied = new Map();
+
+    cells.forEach((cell, cellIndex) => {
+      const where = `cell #${cellIndex + 1} in lane ${laneId}`;
+
+      const hasStep = stepIndex.has(cell && cell.step);
+      if (!hasStep) {
+        errors.push(`Unknown step ${JSON.stringify(cell && cell.step)} in lane ${laneId}.`);
+      }
+
+      const span = cell.span === undefined ? 1 : cell.span;
+      const spanValid = Number.isInteger(span) && span >= 1;
+      if (!spanValid) {
+        errors.push(`The span of ${where} must be an integer of 1 or more.`);
+      }
+
+      if (hasStep && spanValid) {
+        const start = stepIndex.get(cell.step);
+        if (start + span > steps.length) {
+          errors.push(
+            `The span of ${where} runs past the last step ` +
+            `(starts at step ${start + 1}, spans ${span}, ${steps.length} steps exist).`
+          );
+        } else {
+          let reported = false;
+          for (let column = start; column < start + span; column += 1) {
+            if (occupied.has(column)) {
+              if (!reported) {
+                errors.push(
+                  `Cells overlap in lane ${laneId} at step ` +
+                  `${JSON.stringify(steps[column].id)}.`
+                );
+                reported = true;
+              }
+            }
+            occupied.set(column, cellIndex);
+          }
+        }
+      }
+
+      if (cell.flag !== undefined && !['gap', 'risk'].includes(cell.flag)) {
+        errors.push(`The flag ${JSON.stringify(cell.flag)} on ${where} must be "gap" or "risk".`);
+      }
+
+      if (lane.kind === 'emotion') {
+        if (!Number.isInteger(cell.score) || cell.score < -3 || cell.score > 3) {
+          errors.push(`The score of ${where} must be an integer from -3 to 3.`);
+        }
+      } else if (!isFilledString(cell.text)) {
+        errors.push(`The ${where} needs "text".`);
+      }
+    });
+  });
+
+  const emotionLanes = lanes.filter((lane) => lane && lane.kind === 'emotion');
+  if (emotionLanes.length > 1) {
+    errors.push('An artifact may hold at most one emotion lane.');
+  }
+  if (data.type === 'journey' && emotionLanes.length !== 1) {
+    errors.push('A journey needs exactly one emotion lane.');
+  }
+
+  const laneIds = new Set(lanes.map((lane) => lane && lane.id));
+  const dividers = Array.isArray(data.dividers) ? data.dividers : [];
+  dividers.forEach((divider, index) => {
+    if (!laneIds.has(divider && divider.after)) {
+      errors.push(
+        `Unknown lane ${JSON.stringify(divider && divider.after)} ` +
+        `in divider #${index + 1}.`
+      );
+    }
+  });
+
+  return { ok: errors.length === 0, errors };
+}
+
+/** Turns a validated model into a grid-ready layout.
+    Relies on validateModel having already passed: data.steps and data.lanes are
+    non-empty arrays, all cell step references are valid, and all divider lane
+    references are valid. This function performs no shape checking of its own. */
+function buildLayout(data) {
+  const columnOf = new Map(data.steps.map((step, index) => [step.id, index + 1]));
+
+  const columns = data.steps.map((step) => ({ id: step.id, label: step.label }));
+
+  const rows = data.lanes.map((lane) => {
+    const cells = (Array.isArray(lane.cells) ? lane.cells : [])
+      .map((cell) => ({
+        step: cell.step,
+        key: `${lane.id}:${cell.step}`,
+        colStart: columnOf.get(cell.step),
+        colSpan: cell.span === undefined ? 1 : cell.span,
+        text: cell.text === undefined ? '' : cell.text,
+        ref: cell.ref === undefined ? '' : cell.ref,
+        note: cell.note === undefined ? '' : cell.note,
+        flag: cell.flag === undefined ? '' : cell.flag,
+        score: cell.score,
+        scoreLabel: cell.label === undefined ? '' : cell.label,
+        pinned: cell.pinned === true
+      }))
+      .sort((a, b) => a.colStart - b.colStart);
+
+    return { id: lane.id, label: lane.label, kind: lane.kind, cells };
+  });
+
+  const laneRowIndex = new Map(data.lanes.map((lane, index) => [lane.id, index]));
+  const dividers = (Array.isArray(data.dividers) ? data.dividers : [])
+    .map((divider) => ({
+      afterRowIndex: laneRowIndex.get(divider.after),
+      label: divider.label === undefined ? '' : divider.label
+    }));
+
+  return { columns, rows, dividers };
+}
+
+/** Formats an emotion score with an explicit sign. */
+function formatScore(score) {
+  return score > 0 ? `+${score}` : String(score);
+}
+
+/** Gathers every flagged cell for the summary band, ordered left to right. */
+function collectFlags(layout) {
+  const counts = { gap: 0, risk: 0 };
+  const stepLabelOf = new Map(layout.columns.map((column) => [column.id, column.label]));
+  const items = [];
+
+  layout.rows.forEach((row, rowIndex) => {
+    row.cells.forEach((cell) => {
+      if (cell.flag !== 'gap' && cell.flag !== 'risk') return;
+      counts[cell.flag] += 1;
+      items.push({
+        _column: cell.colStart,
+        _row: rowIndex,
+        key: cell.key,
+        flag: cell.flag,
+        laneLabel: row.label,
+        stepLabel: stepLabelOf.get(cell.step),
+        text: row.kind === 'emotion' ? (cell.scoreLabel || formatScore(cell.score)) : cell.text,
+        note: cell.note
+      });
+    });
+  });
+
+  items.sort((a, b) => (a._column - b._column) || (a._row - b._row));
+  items.forEach((item) => { delete item._column; delete item._row; });
+
+  return { counts, items };
+}
+
+const SCORE_MIN = -3;
+const SCORE_MAX = 3;
+
+function round2(value) {
+  return Math.round(value * 100) / 100;
+}
+
+/** Computes one point per emotion cell, in the coordinate space of the lane's SVG box. */
+function sparklinePoints(cells, columnCount, box) {
+  if (!Array.isArray(cells) || columnCount < 1) return [];
+  const columnWidth = box.width / columnCount;
+  const range = SCORE_MAX - SCORE_MIN;
+
+  return cells
+    .slice()
+    .sort((a, b) => a.colStart - b.colStart)
+    .map((cell) => ({
+      key: cell.key,
+      score: cell.score,
+      flag: cell.flag === undefined ? '' : cell.flag,
+      x: round2((cell.colStart - 0.5) * columnWidth),
+      y: round2(((SCORE_MAX - cell.score) / range) * box.height)
+    }));
+}
+
+const MIN_SCALE = 0.4;
+
+/** The zoom level that fits contentWidth inside viewportWidth, clamped to a readable floor. */
+function fitScale(contentWidth, viewportWidth) {
+  if (!(contentWidth > 0) || !(viewportWidth > 0)) return 1;
+  const raw = viewportWidth / contentWidth;
+  if (raw >= 1) return 1;
+  return Math.max(MIN_SCALE, round2(raw));
+}
+</script>
+
+<script id="ui">
+(function () {
+  function el(tag, className, text) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined && text !== '') node.textContent = text;
+    return node;
+  }
+
+  function renderCell(cell) {
+    const node = el('div', 'cell');
+    node.dataset.key = cell.key;
+    node.style.gridColumn = `${cell.colStart + 1} / span ${cell.colSpan}`;
+    if (cell.flag) node.classList.add(`cell--flag-${cell.flag}`);
+    if (cell.flag) {
+      node.appendChild(el('span', 'cell__flag', cell.flag === 'gap' ? 'Gap' : 'Risk'));
+    }
+    node.appendChild(document.createTextNode(cell.text));
+    if (cell.ref) node.appendChild(el('span', 'cell__ref', cell.ref));
+    if (cell.note) node.appendChild(el('span', 'cell__note', cell.note));
+    return node;
+  }
+
+  const ZOOM_LEVELS = [1, 0.75, 0.5];
+  let toolbarNode = null;
+  let currentZoom = 1;
+  let currentLayout = null;
+  let zoomBeforePrint = null;
+
+  function setZoom(value) {
+    currentZoom = value;
+    document.documentElement.style.setProperty('--zoom', String(value));
+    if (!toolbarNode) return;
+    toolbarNode.querySelectorAll('button[data-zoom]').forEach((button) => {
+      button.setAttribute('aria-pressed', String(Number(button.dataset.zoom) === value));
+    });
+  }
+
+  function applyFit() {
+    const grid = document.querySelector('.grid');
+    const sheet = document.querySelector('.sheet');
+    if (!grid || !sheet) return;
+    document.documentElement.style.setProperty('--zoom', '1');
+    const contentWidth = grid.scrollWidth;
+    // Read the sheet's own left+right padding rather than hard-coding it, so this
+    // stays correct if .sheet's padding in <style id="theme"> ever changes.
+    const sheetStyle = getComputedStyle(sheet);
+    const sheetPadding = parseFloat(sheetStyle.paddingLeft) + parseFloat(sheetStyle.paddingRight);
+    setZoom(fitScale(contentWidth, document.documentElement.clientWidth - sheetPadding));
+  }
+
+  // Letter landscape (279.4mm) minus the 12mm @page margins on each side, at 96dpi.
+  // Letter is narrower than A4 landscape, so a width that fits Letter fits both.
+  const PRINT_WIDTH_PX = 960;
+
+  /** Redraws every emotion lane from the current layout. Used after a zoom change
+      that ResizeObserver has not yet reacted to (its callback is asynchronous),
+      most notably right before window.print(), which runs synchronously and would
+      otherwise snapshot a sparkline still sized for the pre-print layout. */
+  function redrawEmotionLanes() {
+    if (!currentLayout) return;
+    document.querySelectorAll('[data-emotion-row]').forEach((holder) => {
+      const rowIndex = Number(holder.dataset.emotionRow);
+      const row = currentLayout.rows[rowIndex];
+      if (row) drawEmotion(holder, row, currentLayout.columns.length);
+    });
+  }
+
+  /** Fits the artifact to the printable page width (not the browser viewport,
+      which has nothing to do with the paper size the @page rule requests) and
+      redraws the emotion lanes synchronously so print sees current geometry. */
+  function preparePrint() {
+    zoomBeforePrint = currentZoom;
+    const grid = document.querySelector('.grid');
+    if (grid) {
+      document.documentElement.style.setProperty('--zoom', '1');
+      const contentWidth = grid.scrollWidth;
+      // fitScale floors at 0.4: a sufficiently wide artifact will still overflow
+      // the page rather than shrink to unreadably small type. Deliberate, not a bug.
+      setZoom(fitScale(contentWidth, PRINT_WIDTH_PX));
+    }
+    redrawEmotionLanes();
+  }
+
+  window.addEventListener('afterprint', () => {
+    if (zoomBeforePrint === null) return;
+    setZoom(zoomBeforePrint);
+    redrawEmotionLanes();
+    zoomBeforePrint = null;
+  });
+
+  function renderToolbar() {
+    const bar = el('div', 'toolbar');
+    ZOOM_LEVELS.forEach((level) => {
+      const button = el('button', null, `${Math.round(level * 100)}%`);
+      button.type = 'button';
+      button.dataset.zoom = String(level);
+      button.setAttribute('aria-pressed', String(level === 1));
+      button.addEventListener('click', () => setZoom(level));
+      bar.appendChild(button);
+    });
+
+    const fit = el('button', null, 'Fit');
+    fit.type = 'button';
+    fit.addEventListener('click', applyFit);
+    bar.appendChild(fit);
+
+    const print = el('button', null, 'Print');
+    print.type = 'button';
+    print.addEventListener('click', () => { preparePrint(); window.print(); });
+    bar.appendChild(print);
+
+    toolbarNode = bar;
+    return bar;
+  }
+
+  function renderGrid(layout) {
+    const grid = el('div', 'grid');
+    grid.style.setProperty('--cols', String(layout.columns.length));
+
+    grid.appendChild(el('div', 'col-head col-head--corner'));
+    layout.columns.forEach((column, index) => {
+      const head = el('div', 'col-head');
+      head.appendChild(el('span', 'col-head__num', String(index + 1).padStart(2, '0')));
+      head.appendChild(document.createTextNode(column.label));
+      grid.appendChild(head);
+    });
+
+    layout.rows.forEach((row, rowIndex) => {
+      grid.appendChild(el('div', 'lane-label', row.label));
+
+      if (row.kind === 'emotion') {
+        const holder = el('div', 'emotion');
+        holder.style.gridColumn = `2 / span ${layout.columns.length}`;
+        holder.dataset.emotionRow = String(rowIndex);
+        grid.appendChild(holder);
+      } else {
+        row.cells.forEach((cell) => grid.appendChild(renderCell(cell)));
+      }
+
+      layout.dividers
+        .filter((divider) => divider.afterRowIndex === rowIndex)
+        .forEach((divider) => {
+          grid.appendChild(el('div', 'divider'));
+          if (divider.label) grid.appendChild(el('div', 'divider__label', divider.label));
+        });
+    });
+
+    return grid;
+  }
+
+  function renderMasthead(data) {
+    const masthead = el('div', 'masthead');
+    masthead.appendChild(el('h1', null, data.title));
+    const meta = el('div', 'meta');
+    if (data.subtitle) meta.appendChild(el('span', null, data.subtitle));
+    const info = data.meta || {};
+    ['version', 'date', 'source'].forEach((field) => {
+      if (info[field]) meta.appendChild(el('span', null, info[field]));
+    });
+    masthead.appendChild(meta);
+    masthead.appendChild(renderToolbar());
+    return masthead;
+  }
+
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+
+  function svg(tag, attrs) {
+    const node = document.createElementNS(SVG_NS, tag);
+    Object.keys(attrs).forEach((name) => node.setAttribute(name, String(attrs[name])));
+    return node;
+  }
+
+  // Vertical gap (in real CSS-pixel units, since the viewBox is now 1:1 with the
+  // holder's measured box) between a dot and its caption label. Kept well under
+  // half of the lane's default height (76px at zoom 1, per .emotion__svg's CSS,
+  // and never smaller than 30px even at the minimum zoom fitScale allows) so the
+  // label always lands inside the box no matter which side of the midline it is
+  // placed on.
+  const EMOTION_LABEL_GAP = 12;
+
+  /** Draws the emotion lane into `holder`: dotted neutral axis, 1px polyline, one
+      dot per step, and (when the cell carries one) a caption label near its dot.
+      The label is placed on whichever side of the box midline has room, so a dot
+      sitting at the very top or bottom (score +3 / -3) never collides with its
+      own label.
+
+      The SVG's viewBox is set to its own measured pixel box (one user unit per
+      CSS pixel) instead of a fixed abstract size, so nothing is scaled: dots
+      stay round and label glyphs stay unstretched at any window width. This
+      makes the draw idempotent but width/height-dependent — callers must redraw
+      whenever the holder is resized (see `observeEmotion`). Rebuilding always
+      clears the holder first, so repeated calls never append duplicate content.
+
+      Measurement order matters here: `.emotion` has no height of its own — the
+      SVG's CSS (`height: calc(76px * var(--zoom))`) is what gives that grid row
+      its height, since nothing else in the row is that tall. So the (empty)
+      canvas is attached to the holder *first*, then measured, then filled in.
+      Measuring the holder itself before anything is attached would read the
+      row's pre-insertion height (whatever the lane label alone needs), produce
+      a viewBox that undersells the box the browser goes on to actually render,
+      and the browser would then silently stretch that mismatched content to
+      fill it — reintroducing exactly the distortion this fix exists to remove. */
+  function drawEmotion(holder, row, columnCount) {
+    holder.textContent = '';
+    const canvas = svg('svg', {
+      class: 'emotion__svg',
+      role: 'img',
+      'aria-label': row.label
+    });
+    holder.appendChild(canvas);
+
+    const width = canvas.clientWidth;
+    const height = canvas.clientHeight;
+    if (!(width > 0) || !(height > 0)) return;
+    const box = { width, height };
+    canvas.setAttribute('viewBox', `0 0 ${box.width} ${box.height}`);
+
+    canvas.appendChild(svg('line', {
+      class: 'emotion__axis',
+      x1: 0, y1: box.height / 2, x2: box.width, y2: box.height / 2,
+      vectorEffect: 'non-scaling-stroke'
+    }));
+
+    const points = sparklinePoints(row.cells, columnCount, box);
+    if (points.length > 1) {
+      canvas.appendChild(svg('polyline', {
+        class: 'emotion__line',
+        points: points.map((point) => `${point.x},${point.y}`).join(' '),
+        vectorEffect: 'non-scaling-stroke'
+      }));
+    }
+
+    const labelOf = new Map(row.cells.map((cell) => [cell.key, cell.scoreLabel]));
+
+    points.forEach((point) => {
+      const dot = svg('circle', {
+        class: 'emotion__dot' + (point.flag ? ' emotion__dot--flag' : ''),
+        cx: point.x, cy: point.y, r: 3.5
+      });
+      dot.dataset.key = point.key;
+      canvas.appendChild(dot);
+
+      const label = labelOf.get(point.key);
+      if (!label) return;
+
+      const above = point.y > box.height / 2;
+      const text = svg('text', {
+        class: 'emotion__label',
+        x: point.x,
+        y: above ? point.y - EMOTION_LABEL_GAP : point.y + EMOTION_LABEL_GAP,
+        'text-anchor': 'middle'
+      });
+      text.textContent = label;
+      canvas.appendChild(text);
+    });
+  }
+
+  /** Draws the emotion lane and keeps it correct as the holder's box changes —
+      on window resize and on the column-width changes a future zoom control
+      will cause. `drawEmotion` clears and rebuilds the SVG from scratch each
+      time (never appends onto stale content), and redrawing does not itself
+      change the holder's size, so this does not create a resize feedback loop. */
+  function observeEmotion(holder, row, columnCount) {
+    const redraw = () => drawEmotion(holder, row, columnCount);
+    redraw();
+    if (typeof ResizeObserver === 'undefined') return;
+    new ResizeObserver(redraw).observe(holder);
+  }
+
+  function scrollToCell(key) {
+    const target = document.querySelector(`[data-key="${CSS.escape(key)}"]`);
+    if (!target) return;
+    target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+    target.classList.remove('cell--target');
+    void target.getBoundingClientRect();
+    target.classList.add('cell--target');
+  }
+
+  function renderSummary(layout) {
+    const summary = collectFlags(layout);
+    if (summary.items.length === 0) return null;
+
+    const node = el('div', 'summary');
+    const parts = [];
+    if (summary.counts.gap) parts.push(`${summary.counts.gap} gap${summary.counts.gap > 1 ? 's' : ''}`);
+    if (summary.counts.risk) parts.push(`${summary.counts.risk} risk${summary.counts.risk > 1 ? 's' : ''}`);
+    node.appendChild(el('div', 'summary__count', parts.join(' · ')));
+
+    const list = el('ul', 'summary__list');
+    summary.items.forEach((item) => {
+      const entry = document.createElement('li');
+      const button = el('button', 'summary__item' + (item.flag === 'risk' ? ' summary__item--risk' : ''));
+      button.type = 'button';
+      button.appendChild(document.createTextNode(item.text));
+      button.appendChild(el('span', 'summary__where', `${item.laneLabel} · ${item.stepLabel}`));
+      button.addEventListener('click', () => scrollToCell(item.key));
+      entry.appendChild(button);
+      list.appendChild(entry);
+    });
+    node.appendChild(list);
+    return node;
+  }
+
+  function renderErrors(errors, root) {
+    root.textContent = '';
+    const sheet = el('div', 'sheet');
+    const box = el('div', 'errors');
+    box.appendChild(el('h2', null, 'This artifact cannot be drawn'));
+    const list = document.createElement('ul');
+    errors.forEach((message) => {
+      const item = document.createElement('li');
+      item.textContent = message;
+      list.appendChild(item);
+    });
+    box.appendChild(list);
+    box.appendChild(el(
+      'p', null,
+      'Fix the JSON in the "artifact" script block of this file, then reload. ' +
+      'See SCHEMA.md in the journey repository for the field reference.'
+    ));
+    sheet.appendChild(box);
+    root.appendChild(sheet);
+  }
+
+  function renderArtifact(data, root) {
+    root.textContent = '';
+    const sheet = el('div', 'sheet');
+    const layout = buildLayout(data);
+    currentLayout = layout;
+    sheet.appendChild(renderMasthead(data));
+    const summary = renderSummary(layout);
+    if (summary) sheet.appendChild(summary);
+    sheet.appendChild(renderGrid(layout));
+    root.appendChild(sheet);
+
+    layout.rows.forEach((row, rowIndex) => {
+      if (row.kind !== 'emotion') return;
+      const holder = sheet.querySelector(`[data-emotion-row="${rowIndex}"]`);
+      if (holder) observeEmotion(holder, row, layout.columns.length);
+    });
+
+    return layout;
+  }
+
+  window.JourneyUI = { el, renderArtifact };
+
+  const dataNode = document.getElementById('artifact');
+  const root = document.getElementById('root');
+
+  let data;
+  let parseError = null;
+  try {
+    data = JSON.parse(dataNode.textContent);
+  } catch (error) {
+    parseError = error;
+  }
+
+  if (parseError) {
+    renderErrors(['The artifact data is not valid JSON: ' + parseError.message], root);
+    document.title = 'Invalid artifact — Journey';
+  } else {
+    const check = validateModel(data);
+    if (check.ok) {
+      renderArtifact(data, root);
+      document.title = data.title + ' — ' + (data.subtitle || 'Journey');
+    } else {
+      renderErrors(check.errors, root);
+      document.title = 'Invalid artifact — Journey';
+    }
+  }
+})();
+</script>
+</body>
+</html>
