@@ -31,18 +31,19 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-.sheet { padding: 32px 36px 64px; width: max-content; min-width: 100%; }
+.sheet {
+  margin-top: 32px;
+  padding: 8px 36px 64px;
+  width: max-content;
+  min-width: 100%;
+  border-top: 3px solid var(--ink);
+}
 
 .masthead {
-  border-top: 3px solid var(--ink);
-  padding-top: 8px;
-  margin-bottom: 20px;
-  width: 100%;
-}
-.masthead__pin {
   display: flex;
   align-items: baseline;
   gap: 24px;
+  margin-bottom: 20px;
   position: sticky;
   left: 0;
   width: max-content;
@@ -223,8 +224,8 @@ body {
 @media print {
   .toolbar { display: none; }
   body { background: #fff; }
-  .sheet { padding: 0; }
-  .masthead, .masthead__pin, .summary, .lane-label, .col-head, .divider__label { position: static; width: auto; }
+  .sheet { padding: 0; width: auto; min-width: 0; }
+  .masthead, .summary, .lane-label, .col-head, .divider__label { position: static; width: auto; }
   .cell, .col-head, .lane-label { break-inside: avoid; }
   .summary__item { color: #111; }
 }
