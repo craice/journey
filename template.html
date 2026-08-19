@@ -588,6 +588,76 @@ function fitScale(contentWidth, viewportWidth) {
     return masthead;
   }
 
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+
+  function svg(tag, attrs) {
+    const node = document.createElementNS(SVG_NS, tag);
+    Object.keys(attrs).forEach((name) => node.setAttribute(name, String(attrs[name])));
+    return node;
+  }
+
+  // Vertical gap (in the lane's viewBox units) between a dot and its caption label.
+  // Kept well under half the box height so the label always lands inside the box
+  // no matter which side of the midline it is placed on.
+  const EMOTION_LABEL_GAP = 12;
+
+  /** Draws the emotion lane: dotted neutral axis, 1px polyline, one dot per step,
+      and (when the cell carries one) a caption label near its dot. The label is
+      placed on whichever side of the box midline has room, so a dot sitting at
+      the very top or bottom (score +3 / -3) never collides with its own label. */
+  function drawEmotion(holder, row, columnCount) {
+    const box = { width: 1000, height: 76 };
+    const canvas = svg('svg', {
+      class: 'emotion__svg',
+      viewBox: `0 0 ${box.width} ${box.height}`,
+      preserveAspectRatio: 'none',
+      role: 'img',
+      'aria-label': row.label
+    });
+
+    canvas.appendChild(svg('line', {
+      class: 'emotion__axis',
+      x1: 0, y1: box.height / 2, x2: box.width, y2: box.height / 2,
+      vectorEffect: 'non-scaling-stroke'
+    }));
+
+    const points = sparklinePoints(row.cells, columnCount, box);
+    if (points.length > 1) {
+      canvas.appendChild(svg('polyline', {
+        class: 'emotion__line',
+        points: points.map((point) => `${point.x},${point.y}`).join(' '),
+        vectorEffect: 'non-scaling-stroke'
+      }));
+    }
+
+    const labelOf = new Map(row.cells.map((cell) => [cell.key, cell.scoreLabel]));
+
+    points.forEach((point) => {
+      const dot = svg('circle', {
+        class: 'emotion__dot' + (point.flag ? ' emotion__dot--flag' : ''),
+        cx: point.x, cy: point.y, r: 3.5
+      });
+      dot.dataset.key = point.key;
+      canvas.appendChild(dot);
+
+      const label = labelOf.get(point.key);
+      if (!label) return;
+
+      const above = point.y > box.height / 2;
+      const text = svg('text', {
+        class: 'emotion__label',
+        x: point.x,
+        y: above ? point.y - EMOTION_LABEL_GAP : point.y + EMOTION_LABEL_GAP,
+        'text-anchor': 'middle'
+      });
+      text.textContent = label;
+      canvas.appendChild(text);
+    });
+
+    holder.textContent = '';
+    holder.appendChild(canvas);
+  }
+
   function renderArtifact(data, root) {
     root.textContent = '';
     const sheet = el('div', 'sheet');
@@ -595,6 +665,13 @@ function fitScale(contentWidth, viewportWidth) {
     sheet.appendChild(renderMasthead(data));
     sheet.appendChild(renderGrid(layout));
     root.appendChild(sheet);
+
+    layout.rows.forEach((row, rowIndex) => {
+      if (row.kind !== 'emotion') return;
+      const holder = sheet.querySelector(`[data-emotion-row="${rowIndex}"]`);
+      if (holder) drawEmotion(holder, row, layout.columns.length);
+    });
+
     return layout;
   }
 
