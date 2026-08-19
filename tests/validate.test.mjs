@@ -66,7 +66,7 @@ test('collects every error rather than stopping at the first', () => {
   assert.ok(errors.length >= 4, `expected several errors, got ${errors.length}`);
 });
 
-test('the loader preserves undefined-valued keys across the realm boundary', () => {
+test('rejects undefined title', () => {
   const model = minimal();
   model.title = undefined;
   const { ok, errors } = validateModel(model);
