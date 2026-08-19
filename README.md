@@ -51,7 +51,8 @@ curve, Saying and Opportunities lanes.
   dropped. A grid wider than the page is not scaled down to fit it.
 - A gap summary band listing every flagged cell, each one click-to-scroll to
   its place in the grid.
-- Code references (`file:line`) shown directly on the cells that carry them.
+- Every claim about what the product does carries its address on the cell —
+  a route, a `file:line`, or both.
 - Readable validation errors — a malformed artifact reports what's wrong
   instead of rendering a blank page.
 - Every flag is marked by colour and by a text label ("Gap" / "Risk"), never
