@@ -31,20 +31,21 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-.sheet { padding: 32px 36px 64px; min-width: min-content; }
+.sheet { padding: 32px 36px 64px; width: max-content; min-width: 100%; }
 
 .masthead {
   border-top: 3px solid var(--ink);
   padding-top: 8px;
   margin-bottom: 20px;
+  width: 100%;
+}
+.masthead__pin {
   display: flex;
-  justify-content: space-between;
   align-items: baseline;
   gap: 24px;
   position: sticky;
   left: 0;
-  width: 100vw;
-  max-width: 100%;
+  width: max-content;
 }
 .masthead h1 { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .masthead .meta {
@@ -75,7 +76,7 @@ body {
 .summary {
   position: sticky;
   left: 0;
-  width: 100vw;
+  width: max-content;
   max-width: 100%;
   margin-bottom: 22px;
   font-size: 11px;
@@ -223,7 +224,7 @@ body {
   .toolbar { display: none; }
   body { background: #fff; }
   .sheet { padding: 0; }
-  .masthead, .summary, .lane-label, .col-head, .divider__label { position: static; width: auto; }
+  .masthead, .masthead__pin, .summary, .lane-label, .col-head, .divider__label { position: static; width: auto; }
   .cell, .col-head, .lane-label { break-inside: avoid; }
   .summary__item { color: #111; }
 }
