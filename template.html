@@ -5,6 +5,229 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Journey Artifact</title>
 <style id="theme">
+:root {
+  --zoom: 1;
+  --col-w: calc(232px * var(--zoom));
+  --lane-w: calc(124px * var(--zoom));
+  --ink: #111;
+  --ink-soft: #8a8a8a;
+  --ink-faint: #b5b5b5;
+  --rule: #e3e3e3;
+  --accent: #e2231a;
+  --paper: #fff;
+  --type: calc(13px * var(--zoom));
+  --type-small: calc(9px * var(--zoom));
+  --type-mono: calc(10px * var(--zoom));
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "Helvetica Neue", Arial, system-ui, sans-serif;
+  font-feature-settings: "tnum";
+  -webkit-font-smoothing: antialiased;
+}
+
+.sheet { padding: 32px 36px 64px; min-width: min-content; }
+
+.masthead {
+  border-top: 3px solid var(--ink);
+  padding-top: 8px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 24px;
+  position: sticky;
+  left: 0;
+  width: 100vw;
+  max-width: 100%;
+}
+.masthead h1 { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
+.masthead .meta {
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  display: flex;
+  gap: 18px;
+}
+
+.toolbar { display: flex; gap: 6px; align-items: center; }
+.toolbar button {
+  font: inherit;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: none;
+  border: 1px solid var(--rule);
+  padding: 4px 9px;
+  cursor: pointer;
+}
+.toolbar button:hover { border-color: var(--ink); }
+.toolbar button[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.toolbar button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.summary {
+  position: sticky;
+  left: 0;
+  width: 100vw;
+  max-width: 100%;
+  margin-bottom: 22px;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.summary__count { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-soft); }
+.summary__list { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 4px; }
+.summary__item {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  text-align: left;
+  color: var(--ink);
+  cursor: pointer;
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+.summary__item:hover { color: var(--accent); }
+.summary__item::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  background: var(--accent);
+  transform: translateY(-1px);
+}
+.summary__item--risk::before { background: none; border: 1px solid var(--accent); }
+.summary__where { color: var(--ink-soft); }
+
+.grid {
+  display: grid;
+  grid-template-columns: var(--lane-w) repeat(var(--cols), minmax(var(--col-w), 1fr));
+  align-items: stretch;
+}
+
+.col-head, .lane-label, .cell {
+  font-size: var(--type);
+  line-height: 1.45;
+  padding: 11px 16px 13px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.col-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--paper);
+  border-bottom: 1px solid var(--ink);
+  font-size: var(--type-small);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding-bottom: 6px;
+}
+.col-head__num { color: var(--ink-faint); margin-right: 7px; }
+
+.lane-label {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--paper);
+  font-size: var(--type-small);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  padding-right: 24px;
+}
+.col-head--corner { position: sticky; left: 0; top: 0; z-index: 3; background: var(--paper); border-bottom-color: var(--ink); }
+
+.cell__ref {
+  display: block;
+  margin-top: 6px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: var(--type-mono);
+  letter-spacing: 0;
+  color: var(--ink-soft);
+}
+.cell__note { display: block; margin-top: 5px; color: var(--ink-soft); }
+.cell__flag {
+  display: inline-block;
+  font-size: var(--type-small);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-right: 8px;
+}
+.cell__flag::before {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  background: var(--accent);
+  margin-right: 6px;
+  transform: translateY(0);
+}
+.cell--flag-risk .cell__flag::before { background: none; border: 1px solid var(--accent); }
+.cell--target { animation: flash 1.2s ease-out; }
+@keyframes flash {
+  from { background: #fdece9; }
+  to { background: transparent; }
+}
+
+.divider {
+  grid-column: 1 / -1;
+  border-top: 1px solid var(--ink);
+  margin: 2px 0 0;
+}
+.divider__label {
+  grid-column: 1 / -1;
+  font-size: 8px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  padding: 3px 0 6px;
+  position: sticky;
+  left: 0;
+}
+
+.emotion { position: relative; padding: 0; border-bottom: 1px solid var(--rule); }
+.emotion__svg { display: block; width: 100%; height: calc(76px * var(--zoom)); overflow: visible; }
+.emotion__axis { stroke: #cfcfcf; stroke-width: 1; stroke-dasharray: 2 3; }
+.emotion__line { fill: none; stroke: var(--ink); stroke-width: 1; }
+.emotion__dot { fill: var(--ink); }
+.emotion__dot--flag { fill: var(--accent); }
+.emotion__label {
+  font-size: 8px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  fill: var(--ink-soft);
+}
+
+.errors {
+  border: 1px solid var(--accent);
+  padding: 20px 22px;
+  max-width: 680px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.errors h2 { font-size: 13px; letter-spacing: -0.01em; margin: 0 0 10px; }
+.errors ul { margin: 0; padding-left: 18px; }
+.errors code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px; }
+
+@media print {
+  .toolbar { display: none; }
+  body { background: #fff; }
+  .sheet { padding: 0; }
+  .masthead, .summary, .lane-label, .col-head, .divider__label { position: static; width: auto; }
+  .cell, .col-head, .lane-label { break-inside: avoid; }
+  .summary__item { color: #111; }
+}
+@page { size: landscape; margin: 12mm; }
 </style>
 </head>
 <body>
