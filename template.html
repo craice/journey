@@ -596,24 +596,50 @@ function fitScale(contentWidth, viewportWidth) {
     return node;
   }
 
-  // Vertical gap (in the lane's viewBox units) between a dot and its caption label.
-  // Kept well under half the box height so the label always lands inside the box
-  // no matter which side of the midline it is placed on.
+  // Vertical gap (in real CSS-pixel units, since the viewBox is now 1:1 with the
+  // holder's measured box) between a dot and its caption label. Kept well under
+  // half of the lane's default height (76px at zoom 1, per .emotion__svg's CSS,
+  // and never smaller than 30px even at the minimum zoom fitScale allows) so the
+  // label always lands inside the box no matter which side of the midline it is
+  // placed on.
   const EMOTION_LABEL_GAP = 12;
 
-  /** Draws the emotion lane: dotted neutral axis, 1px polyline, one dot per step,
-      and (when the cell carries one) a caption label near its dot. The label is
-      placed on whichever side of the box midline has room, so a dot sitting at
-      the very top or bottom (score +3 / -3) never collides with its own label. */
+  /** Draws the emotion lane into `holder`: dotted neutral axis, 1px polyline, one
+      dot per step, and (when the cell carries one) a caption label near its dot.
+      The label is placed on whichever side of the box midline has room, so a dot
+      sitting at the very top or bottom (score +3 / -3) never collides with its
+      own label.
+
+      The SVG's viewBox is set to its own measured pixel box (one user unit per
+      CSS pixel) instead of a fixed abstract size, so nothing is scaled: dots
+      stay round and label glyphs stay unstretched at any window width. This
+      makes the draw idempotent but width/height-dependent — callers must redraw
+      whenever the holder is resized (see `observeEmotion`). Rebuilding always
+      clears the holder first, so repeated calls never append duplicate content.
+
+      Measurement order matters here: `.emotion` has no height of its own — the
+      SVG's CSS (`height: calc(76px * var(--zoom))`) is what gives that grid row
+      its height, since nothing else in the row is that tall. So the (empty)
+      canvas is attached to the holder *first*, then measured, then filled in.
+      Measuring the holder itself before anything is attached would read the
+      row's pre-insertion height (whatever the lane label alone needs), produce
+      a viewBox that undersells the box the browser goes on to actually render,
+      and the browser would then silently stretch that mismatched content to
+      fill it — reintroducing exactly the distortion this fix exists to remove. */
   function drawEmotion(holder, row, columnCount) {
-    const box = { width: 1000, height: 76 };
+    holder.textContent = '';
     const canvas = svg('svg', {
       class: 'emotion__svg',
-      viewBox: `0 0 ${box.width} ${box.height}`,
-      preserveAspectRatio: 'none',
       role: 'img',
       'aria-label': row.label
     });
+    holder.appendChild(canvas);
+
+    const width = canvas.clientWidth;
+    const height = canvas.clientHeight;
+    if (!(width > 0) || !(height > 0)) return;
+    const box = { width, height };
+    canvas.setAttribute('viewBox', `0 0 ${box.width} ${box.height}`);
 
     canvas.appendChild(svg('line', {
       class: 'emotion__axis',
@@ -653,9 +679,18 @@ function fitScale(contentWidth, viewportWidth) {
       text.textContent = label;
       canvas.appendChild(text);
     });
+  }
 
-    holder.textContent = '';
-    holder.appendChild(canvas);
+  /** Draws the emotion lane and keeps it correct as the holder's box changes —
+      on window resize and on the column-width changes a future zoom control
+      will cause. `drawEmotion` clears and rebuilds the SVG from scratch each
+      time (never appends onto stale content), and redrawing does not itself
+      change the holder's size, so this does not create a resize feedback loop. */
+  function observeEmotion(holder, row, columnCount) {
+    const redraw = () => drawEmotion(holder, row, columnCount);
+    redraw();
+    if (typeof ResizeObserver === 'undefined') return;
+    new ResizeObserver(redraw).observe(holder);
   }
 
   function renderArtifact(data, root) {
@@ -669,7 +704,7 @@ function fitScale(contentWidth, viewportWidth) {
     layout.rows.forEach((row, rowIndex) => {
       if (row.kind !== 'emotion') return;
       const holder = sheet.querySelector(`[data-emotion-row="${rowIndex}"]`);
-      if (holder) drawEmotion(holder, row, layout.columns.length);
+      if (holder) observeEmotion(holder, row, layout.columns.length);
     });
 
     return layout;
