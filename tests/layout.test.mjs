@@ -205,3 +205,76 @@ test('orders items by row when in the same column', () => {
   // Both items are in step1 (column 1), so row order should determine the order
   assert.deepEqual(summary.items.map((item) => item.key), ['lane1:step1', 'lane2:step1']);
 });
+
+// --- Filler cells: the lane rule must run unbroken across empty columns ---
+
+const fourSteps = (lanes) => ({
+  type: 'blueprint',
+  title: 'Onboarding',
+  steps: [
+    { id: 's1', label: 'One' },
+    { id: 's2', label: 'Two' },
+    { id: 's3', label: 'Three' },
+    { id: 's4', label: 'Four' }
+  ],
+  lanes
+});
+
+test('a lane covering every column needs no fillers', () => {
+  const layout = buildLayout(fourSteps([{
+    id: 'full', label: 'Full', kind: 'cards',
+    cells: [
+      { step: 's1', text: 'a' }, { step: 's2', text: 'b' },
+      { step: 's3', text: 'c' }, { step: 's4', text: 'd' }
+    ]
+  }]));
+  assert.deepEqual(layout.rows[0].fillers, []);
+});
+
+test('a trailing gap becomes one filler spanning the remaining columns', () => {
+  const layout = buildLayout(fourSteps([{
+    id: 'sparse', label: 'Sparse', kind: 'cards',
+    cells: [{ step: 's1', text: 'a' }, { step: 's2', text: 'b' }]
+  }]));
+  assert.deepEqual(layout.rows[0].fillers, [{ colStart: 3, colSpan: 2 }]);
+});
+
+test('a leading gap becomes a filler before the first cell', () => {
+  const layout = buildLayout(fourSteps([{
+    id: 'late', label: 'Late', kind: 'cards',
+    cells: [{ step: 's3', text: 'c' }, { step: 's4', text: 'd' }]
+  }]));
+  assert.deepEqual(layout.rows[0].fillers, [{ colStart: 1, colSpan: 2 }]);
+});
+
+test('a gap between cells is filled, and adjacent empty columns merge into one run', () => {
+  const layout = buildLayout(fourSteps([{
+    id: 'middle', label: 'Middle', kind: 'cards',
+    cells: [{ step: 's1', text: 'a' }, { step: 's4', text: 'd' }]
+  }]));
+  assert.deepEqual(layout.rows[0].fillers, [{ colStart: 2, colSpan: 2 }]);
+});
+
+test('a span counts as covering every column it crosses', () => {
+  const layout = buildLayout(fourSteps([{
+    id: 'spanned', label: 'Spanned', kind: 'cards',
+    cells: [{ step: 's1', text: 'a', span: 3 }]
+  }]));
+  assert.deepEqual(layout.rows[0].fillers, [{ colStart: 4, colSpan: 1 }]);
+});
+
+test('a lane with no cells is filled edge to edge', () => {
+  const layout = buildLayout(fourSteps([{
+    id: 'empty', label: 'Empty', kind: 'cards', cells: []
+  }]));
+  assert.deepEqual(layout.rows[0].fillers, [{ colStart: 1, colSpan: 4 }]);
+});
+
+test('an emotion lane gets no fillers — its holder already spans every column', () => {
+  const data = fourSteps([{
+    id: 'emotion', label: 'Emotion', kind: 'emotion',
+    cells: [{ step: 's2', score: 1 }]
+  }]);
+  data.type = 'journey';
+  assert.deepEqual(buildLayout(data).rows[0].fillers, []);
+});

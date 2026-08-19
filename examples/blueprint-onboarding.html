@@ -8,6 +8,7 @@
 :root {
   --zoom: 1;
   --col-w: calc(232px * var(--zoom));
+  --col-max: calc(320px * var(--zoom));
   --lane-w: calc(124px * var(--zoom));
   --ink: #111;
   --ink-soft: #8a8a8a;
@@ -122,7 +123,7 @@ body {
 
 .grid {
   display: grid;
-  grid-template-columns: var(--lane-w) repeat(var(--cols), minmax(var(--col-w), 1fr));
+  grid-template-columns: var(--lane-w) repeat(var(--cols), minmax(var(--col-w), var(--col-max)));
   align-items: stretch;
 }
 
@@ -597,7 +598,9 @@ function buildLayout(data) {
       }))
       .sort((a, b) => a.colStart - b.colStart);
 
-    return { id: lane.id, label: lane.label, kind: lane.kind, cells };
+    const fillers = lane.kind === 'emotion' ? [] : findFillers(cells, data.steps.length);
+
+    return { id: lane.id, label: lane.label, kind: lane.kind, cells, fillers };
   });
 
   const laneRowIndex = new Map(data.lanes.map((lane, index) => [lane.id, index]));
@@ -608,6 +611,39 @@ function buildLayout(data) {
     }));
 
   return { columns, rows, dividers };
+}
+
+/**
+ * Finds the runs of columns a lane's cells leave uncovered.
+ *
+ * The lane rule is drawn as the bottom border of each cell, so a column with no
+ * cell would leave a gap in the rule and tear the grid apart visually. The UI
+ * renders one empty cell per run returned here, which restores the unbroken line.
+ * Adjacent empty columns merge into a single run so the DOM stays as small as
+ * the geometry allows.
+ */
+function findFillers(cells, columnCount) {
+  const covered = new Set();
+  cells.forEach((cell) => {
+    for (let column = cell.colStart; column < cell.colStart + cell.colSpan; column += 1) {
+      covered.add(column);
+    }
+  });
+
+  const fillers = [];
+  let run = null;
+  for (let column = 1; column <= columnCount; column += 1) {
+    if (covered.has(column)) {
+      run = null;
+      continue;
+    }
+    if (run) run.colSpan += 1;
+    else {
+      run = { colStart: column, colSpan: 1 };
+      fillers.push(run);
+    }
+  }
+  return fillers;
 }
 
 /** Formats an emotion score with an explicit sign. */
@@ -825,7 +861,19 @@ function fitScale(contentWidth, viewportWidth) {
         holder.dataset.emotionRow = String(rowIndex);
         grid.appendChild(holder);
       } else {
-        row.cells.forEach((cell) => grid.appendChild(renderCell(cell)));
+        // Cells and fillers must be appended in column order. Grid auto-placement
+        // moves its cursor to each definite-column item, and an item whose column
+        // is to the left of the cursor starts a new row — which would drop a
+        // filler onto a row of its own instead of into the hole it exists to fill.
+        const pieces = row.cells
+          .map((cell) => ({ column: cell.colStart, node: renderCell(cell) }))
+          .concat(row.fillers.map((filler) => {
+            const blank = el('div', 'cell cell--blank');
+            blank.style.gridColumn = `${filler.colStart + 1} / span ${filler.colSpan}`;
+            return { column: filler.colStart, node: blank };
+          }))
+          .sort((a, b) => a.column - b.column);
+        pieces.forEach((piece) => grid.appendChild(piece.node));
       }
 
       layout.dividers
