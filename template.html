@@ -252,6 +252,16 @@ function sparklinePoints(cells, columnCount, box) {
       y: round2(((SCORE_MAX - cell.score) / range) * box.height)
     }));
 }
+
+const MIN_SCALE = 0.4;
+
+/** The zoom level that fits contentWidth inside viewportWidth, clamped to a readable floor. */
+function fitScale(contentWidth, viewportWidth) {
+  if (!(contentWidth > 0) || !(viewportWidth > 0)) return 1;
+  const raw = viewportWidth / contentWidth;
+  if (raw >= 1) return 1;
+  return Math.max(MIN_SCALE, round2(raw));
+}
 </script>
 
 <script id="ui">
