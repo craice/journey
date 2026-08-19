@@ -738,11 +738,47 @@ function fitScale(contentWidth, viewportWidth) {
     new ResizeObserver(redraw).observe(holder);
   }
 
+  function scrollToCell(key) {
+    const target = document.querySelector(`[data-key="${key}"]`);
+    if (!target) return;
+    target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+    target.classList.remove('cell--target');
+    void target.offsetWidth;
+    target.classList.add('cell--target');
+  }
+
+  function renderSummary(layout) {
+    const summary = collectFlags(layout);
+    if (summary.items.length === 0) return null;
+
+    const node = el('div', 'summary');
+    const parts = [];
+    if (summary.counts.gap) parts.push(`${summary.counts.gap} gap${summary.counts.gap > 1 ? 's' : ''}`);
+    if (summary.counts.risk) parts.push(`${summary.counts.risk} risk${summary.counts.risk > 1 ? 's' : ''}`);
+    node.appendChild(el('div', 'summary__count', parts.join(' · ')));
+
+    const list = el('ul', 'summary__list');
+    summary.items.forEach((item) => {
+      const entry = document.createElement('li');
+      const button = el('button', 'summary__item' + (item.flag === 'risk' ? ' summary__item--risk' : ''));
+      button.type = 'button';
+      button.appendChild(document.createTextNode(item.text));
+      button.appendChild(el('span', 'summary__where', `${item.laneLabel} · ${item.stepLabel}`));
+      button.addEventListener('click', () => scrollToCell(item.key));
+      entry.appendChild(button);
+      list.appendChild(entry);
+    });
+    node.appendChild(list);
+    return node;
+  }
+
   function renderArtifact(data, root) {
     root.textContent = '';
     const sheet = el('div', 'sheet');
     const layout = buildLayout(data);
     sheet.appendChild(renderMasthead(data));
+    const summary = renderSummary(layout);
+    if (summary) sheet.appendChild(summary);
     sheet.appendChild(renderGrid(layout));
     root.appendChild(sheet);
 
