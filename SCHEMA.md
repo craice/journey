@@ -265,6 +265,6 @@ Other errors `validateModel` can emit, worded the same way in the code:
 - `The span of cell #1 in lane "actions" must be an integer of 1 or more.`
 - `The flag "todo" on cell #1 in lane "actions" must be "gap" or "risk".`
 - `The score of cell #1 in lane "emotion" must be an integer from -3 to 3.`
-- `An artifact may hold at most one emotion lane.`
+- `An artifact may hold at most one emotion lane. Found 2: "e1", "e2".`
 - `A journey needs exactly one emotion lane.`
 - `Unknown lane "frontstage" in divider #1.`

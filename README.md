@@ -11,9 +11,15 @@ Point a coding agent at this repository and ask for an artifact:
 
 > create a service blueprint of \<flow\> using github.com/craice/journey
 
-The agent follows [`SKILL.md`](SKILL.md): it reads the code, fills each lane
-from what it actually finds, cites a real `file:line` for every claim, and
-marks anything it can't verify as a gap rather than guessing.
+The agent fetches [`SKILL.md`](SKILL.md) and follows it:
+
+```bash
+curl -sL --fail https://raw.githubusercontent.com/craice/journey/main/SKILL.md -o /tmp/journey-skill.md
+```
+
+It reads the code, fills each lane from what it actually finds, cites a real
+`file:line` for every claim, and marks anything it can't verify as a gap
+rather than guessing.
 
 ## Use it by hand
 
@@ -58,7 +64,7 @@ scaled to the page rather than redesigned for it.
 ## Development
 
 ```bash
-node --test tests/          # 63 tests, no npm dependencies of any kind
+node --test tests/          # 67 tests, no npm dependencies of any kind
 node tools/build-examples.js  # regenerates examples/*.html from examples/src/*.json
 ```
 
@@ -66,6 +72,10 @@ The logic in `template.html`'s `<script id="core">` block stays free of
 `document` and `window` — the test harness (`tests/helpers/load-core.mjs`)
 evaluates that block standalone in an isolated context and throws if it
 touches the DOM. Rendering lives separately, in `<script id="ui">`.
+
+The design spec and implementation plan behind this project are published
+under [`docs/superpowers/`](docs/superpowers/), for anyone curious how it
+got built.
 
 ## Roadmap
 

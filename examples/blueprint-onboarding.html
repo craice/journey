@@ -112,6 +112,12 @@ body {
   transform: translateY(-1px);
 }
 .summary__item--risk::before { background: none; border: 1px solid var(--accent); }
+.summary__flag {
+  font-size: var(--type-small);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
 .summary__where { color: var(--ink-soft); }
 
 .grid {
@@ -178,7 +184,6 @@ body {
   height: 7px;
   background: var(--accent);
   margin-right: 6px;
-  transform: translateY(0);
 }
 .cell--flag-risk .cell__flag::before { background: none; border: 1px solid var(--accent); }
 .cell.cell--target { animation: flash 1.2s ease-out; }
@@ -215,7 +220,7 @@ body {
 .emotion__dot { fill: var(--ink); }
 .emotion__dot--flag { fill: var(--accent); }
 .emotion__label {
-  font-size: 8px;
+  font-size: calc(8px * var(--zoom));
   letter-spacing: 0.14em;
   text-transform: uppercase;
   fill: var(--ink-soft);
@@ -230,15 +235,14 @@ body {
 }
 .errors h2 { font-size: 13px; letter-spacing: -0.01em; margin: 0 0 10px; }
 .errors ul { margin: 0; padding-left: 18px; }
-.errors code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px; }
 
 @media print {
   .toolbar { display: none; }
-  body { background: #fff; }
+  body { background: var(--paper); }
   .sheet { padding: 0; width: auto; min-width: 0; }
   .masthead, .summary, .lane-label, .col-head, .divider__label { position: static; width: auto; }
   .cell, .col-head, .lane-label { break-inside: avoid; }
-  .summary__item { color: #111; }
+  .summary__item { color: var(--ink); }
 }
 @page { size: landscape; margin: 12mm; }
 </style>
@@ -490,6 +494,11 @@ function validateModel(data) {
     cells.forEach((cell, cellIndex) => {
       const where = `cell #${cellIndex + 1} in lane ${laneId}`;
 
+      if (!cell || typeof cell !== 'object' || Array.isArray(cell)) {
+        errors.push(`The ${where} must be an object.`);
+        return;
+      }
+
       const hasStep = stepIndex.has(cell && cell.step);
       if (!hasStep) {
         errors.push(`Unknown step ${JSON.stringify(cell && cell.step)} in lane ${laneId}.`);
@@ -541,7 +550,8 @@ function validateModel(data) {
 
   const emotionLanes = lanes.filter((lane) => lane && lane.kind === 'emotion');
   if (emotionLanes.length > 1) {
-    errors.push('An artifact may hold at most one emotion lane.');
+    const ids = emotionLanes.map((lane) => JSON.stringify(lane.id)).join(', ');
+    errors.push(`An artifact may hold at most one emotion lane. Found ${emotionLanes.length}: ${ids}.`);
   }
   if (data.type === 'journey' && emotionLanes.length !== 1) {
     errors.push('A journey needs exactly one emotion lane.');
@@ -734,7 +744,7 @@ function fitScale(contentWidth, viewportWidth) {
     document.querySelectorAll('[data-emotion-row]').forEach((holder) => {
       const rowIndex = Number(holder.dataset.emotionRow);
       const row = currentLayout.rows[rowIndex];
-      if (row) drawEmotion(holder, row, currentLayout.columns.length);
+      if (row) drawEmotion(holder, row, currentLayout.columns);
     });
   }
 
@@ -742,6 +752,7 @@ function fitScale(contentWidth, viewportWidth) {
       which has nothing to do with the paper size the @page rule requests) and
       redraws the emotion lanes synchronously so print sees current geometry. */
   function preparePrint() {
+    if (zoomBeforePrint !== null) return;
     zoomBeforePrint = currentZoom;
     const grid = document.querySelector('.grid');
     if (grid) {
@@ -753,6 +764,13 @@ function fitScale(contentWidth, viewportWidth) {
     }
     redrawEmotionLanes();
   }
+
+  // Ctrl+P (and any other browser-native print trigger) fires 'beforeprint'
+  // without ever touching the toolbar button, so preparePrint must run from
+  // this listener rather than only from the button's click handler — otherwise
+  // the most common way people print gets whatever zoom happens to be on
+  // screen and a wide artifact is clipped.
+  window.addEventListener('beforeprint', preparePrint);
 
   window.addEventListener('afterprint', () => {
     if (zoomBeforePrint === null) return;
@@ -779,7 +797,7 @@ function fitScale(contentWidth, viewportWidth) {
 
     const print = el('button', null, 'Print');
     print.type = 'button';
-    print.addEventListener('click', () => { preparePrint(); window.print(); });
+    print.addEventListener('click', () => window.print());
     bar.appendChild(print);
 
     toolbarNode = bar;
@@ -851,11 +869,34 @@ function fitScale(contentWidth, viewportWidth) {
   // placed on.
   const EMOTION_LABEL_GAP = 12;
 
+  /** Builds a screen-reader label for the whole sparkline from the row's own data —
+      "Emotion: Discovers Curious +2; Signs up Hesitant 0; Waits Anxious -3, gap" —
+      instead of just the lane name, since the SVG otherwise conveys nothing to a
+      screen reader. */
+  function emotionAriaLabel(row, columns) {
+    const stepLabelOf = new Map(columns.map((column) => [column.id, column.label]));
+    const parts = row.cells
+      .slice()
+      .sort((a, b) => a.colStart - b.colStart)
+      .map((cell) => {
+        const bits = [stepLabelOf.get(cell.step)];
+        if (cell.scoreLabel) bits.push(cell.scoreLabel);
+        bits.push(formatScore(cell.score));
+        const text = bits.join(' ');
+        return cell.flag ? `${text}, ${cell.flag}` : text;
+      });
+    return `${row.label}: ${parts.join('; ')}`;
+  }
+
   /** Draws the emotion lane into `holder`: dotted neutral axis, 1px polyline, one
-      dot per step, and (when the cell carries one) a caption label near its dot.
-      The label is placed on whichever side of the box midline has room, so a dot
-      sitting at the very top or bottom (score +3 / -3) never collides with its
-      own label.
+      dot per step, and (when the cell carries a score label and/or a flag) a
+      caption near its dot. The label is placed on whichever side of the box
+      midline has room, so a dot sitting at the very top or bottom (score +3 / -3)
+      never collides with its own label.
+
+      A flagged dot is drawn red, but never *only* red: its caption always carries
+      the flag word ("Gap" / "Risk") too, so the flag survives for anyone who
+      cannot see colour.
 
       The SVG's viewBox is set to its own measured pixel box (one user unit per
       CSS pixel) instead of a fixed abstract size, so nothing is scaled: dots
@@ -873,12 +914,12 @@ function fitScale(contentWidth, viewportWidth) {
       a viewBox that undersells the box the browser goes on to actually render,
       and the browser would then silently stretch that mismatched content to
       fill it — reintroducing exactly the distortion this fix exists to remove. */
-  function drawEmotion(holder, row, columnCount) {
+  function drawEmotion(holder, row, columns) {
     holder.textContent = '';
     const canvas = svg('svg', {
       class: 'emotion__svg',
       role: 'img',
-      'aria-label': row.label
+      'aria-label': emotionAriaLabel(row, columns)
     });
     holder.appendChild(canvas);
 
@@ -890,16 +931,14 @@ function fitScale(contentWidth, viewportWidth) {
 
     canvas.appendChild(svg('line', {
       class: 'emotion__axis',
-      x1: 0, y1: box.height / 2, x2: box.width, y2: box.height / 2,
-      vectorEffect: 'non-scaling-stroke'
+      x1: 0, y1: box.height / 2, x2: box.width, y2: box.height / 2
     }));
 
-    const points = sparklinePoints(row.cells, columnCount, box);
+    const points = sparklinePoints(row.cells, columns.length, box);
     if (points.length > 1) {
       canvas.appendChild(svg('polyline', {
         class: 'emotion__line',
-        points: points.map((point) => `${point.x},${point.y}`).join(' '),
-        vectorEffect: 'non-scaling-stroke'
+        points: points.map((point) => `${point.x},${point.y}`).join(' ')
       }));
     }
 
@@ -913,8 +952,10 @@ function fitScale(contentWidth, viewportWidth) {
       dot.dataset.key = point.key;
       canvas.appendChild(dot);
 
-      const label = labelOf.get(point.key);
-      if (!label) return;
+      const scoreLabel = labelOf.get(point.key);
+      const flagWord = point.flag ? (point.flag === 'gap' ? 'Gap' : 'Risk') : '';
+      const caption = [scoreLabel, flagWord].filter(Boolean).join(' · ');
+      if (!caption) return;
 
       const above = point.y > box.height / 2;
       const text = svg('text', {
@@ -923,18 +964,19 @@ function fitScale(contentWidth, viewportWidth) {
         y: above ? point.y - EMOTION_LABEL_GAP : point.y + EMOTION_LABEL_GAP,
         'text-anchor': 'middle'
       });
-      text.textContent = label;
+      text.textContent = caption;
       canvas.appendChild(text);
     });
   }
 
   /** Draws the emotion lane and keeps it correct as the holder's box changes —
-      on window resize and on the column-width changes a future zoom control
-      will cause. `drawEmotion` clears and rebuilds the SVG from scratch each
-      time (never appends onto stale content), and redrawing does not itself
-      change the holder's size, so this does not create a resize feedback loop. */
-  function observeEmotion(holder, row, columnCount) {
-    const redraw = () => drawEmotion(holder, row, columnCount);
+      on window resize and on any zoom change (the toolbar's zoom levels, Fit,
+      and print all go through `setZoom`, which changes the column width).
+      `drawEmotion` clears and rebuilds the SVG from scratch each time (never
+      appends onto stale content), and redrawing does not itself change the
+      holder's size, so this does not create a resize feedback loop. */
+  function observeEmotion(holder, row, columns) {
+    const redraw = () => drawEmotion(holder, row, columns);
     redraw();
     if (typeof ResizeObserver === 'undefined') return;
     new ResizeObserver(redraw).observe(holder);
@@ -965,6 +1007,7 @@ function fitScale(contentWidth, viewportWidth) {
       const button = el('button', 'summary__item' + (item.flag === 'risk' ? ' summary__item--risk' : ''));
       button.type = 'button';
       button.appendChild(document.createTextNode(item.text));
+      button.appendChild(el('span', 'summary__flag', item.flag === 'gap' ? 'Gap' : 'Risk'));
       button.appendChild(el('span', 'summary__where', `${item.laneLabel} · ${item.stepLabel}`));
       button.addEventListener('click', () => scrollToCell(item.key));
       entry.appendChild(button);
@@ -1009,13 +1052,9 @@ function fitScale(contentWidth, viewportWidth) {
     layout.rows.forEach((row, rowIndex) => {
       if (row.kind !== 'emotion') return;
       const holder = sheet.querySelector(`[data-emotion-row="${rowIndex}"]`);
-      if (holder) observeEmotion(holder, row, layout.columns.length);
+      if (holder) observeEmotion(holder, row, layout.columns);
     });
-
-    return layout;
   }
-
-  window.JourneyUI = { el, renderArtifact };
 
   const dataNode = document.getElementById('artifact');
   const root = document.getElementById('root');
@@ -1032,12 +1071,21 @@ function fitScale(contentWidth, viewportWidth) {
     renderErrors(['The artifact data is not valid JSON: ' + parseError.message], root);
     document.title = 'Invalid artifact — Journey';
   } else {
-    const check = validateModel(data);
-    if (check.ok) {
-      renderArtifact(data, root);
-      document.title = data.title + ' — ' + (data.subtitle || 'Journey');
-    } else {
-      renderErrors(check.errors, root);
+    // validateModel and renderArtifact are trusted to agree on the model's shape,
+    // but a surprise here (a bug in either, or a data shape neither anticipated)
+    // must still land on the readable error page rather than leave #root empty —
+    // that guarantee is the whole point of this tool's error handling.
+    try {
+      const check = validateModel(data);
+      if (check.ok) {
+        renderArtifact(data, root);
+        document.title = data.title + ' — ' + (data.subtitle || 'Journey');
+      } else {
+        renderErrors(check.errors, root);
+        document.title = 'Invalid artifact — Journey';
+      }
+    } catch (error) {
+      renderErrors(['Unexpected error while validating or rendering the artifact: ' + error.message], root);
       document.title = 'Invalid artifact — Journey';
     }
   }

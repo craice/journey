@@ -27,8 +27,8 @@ Fetch the two files you need — the HTML shell you fill in, and the field refer
 its JSON:
 
 ```bash
-curl -sL https://raw.githubusercontent.com/craice/journey/main/template.html -o /tmp/journey-template.html
-curl -sL https://raw.githubusercontent.com/craice/journey/main/SCHEMA.md -o /tmp/journey-schema.md
+curl -sL --fail https://raw.githubusercontent.com/craice/journey/main/template.html -o /tmp/journey-template.html
+curl -sL --fail https://raw.githubusercontent.com/craice/journey/main/SCHEMA.md -o /tmp/journey-schema.md
 ```
 
 `SCHEMA.md` is the field reference for every type, cell shape, and validation error.

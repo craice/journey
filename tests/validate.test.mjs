@@ -85,6 +85,24 @@ const threeSteps = () => ({
   lanes: [{ id: 'backstage', label: 'Backstage', kind: 'cards', cells: [] }]
 });
 
+test('rejects a null cell instead of throwing', () => {
+  const model = threeSteps();
+  model.lanes[0].cells = [null];
+  assert.doesNotThrow(() => validateModel(model));
+  const { ok, errors } = validateModel(model);
+  assert.equal(ok, false);
+  assert.match(errors[0], /must be an object/i);
+});
+
+test('rejects a non-object cell (string, number, array) instead of throwing', () => {
+  [['not an object'], [42], [['array', 'is', 'not', 'an', 'object']]].forEach((cells) => {
+    const model = threeSteps();
+    model.lanes[0].cells = cells;
+    assert.doesNotThrow(() => validateModel(model));
+    assert.equal(validateModel(model).ok, false);
+  });
+});
+
 test('rejects a cell pointing at an unknown step', () => {
   const model = threeSteps();
   model.lanes[0].cells = [{ step: 'checkout', text: 'Charges the card' }];
