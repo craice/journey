@@ -364,6 +364,7 @@ body {
 <script type="application/json" id="artifact">
 {
   "type": "journey",
+  "theme": "bands",
   "title": "Onboarding",
   "subtitle": "User Journey Map",
   "meta": {
@@ -887,7 +888,7 @@ const MIN_SCALE = 0.4;
       bar.appendChild(button);
     });
 
-    bar.appendChild(renderThemeSelect(document.documentElement.dataset.theme || 'paper'));
+    bar.appendChild(renderThemeSelect(document.documentElement.dataset.theme || 'blocks'));
 
     const print = el('button', null, 'Print');
     print.type = 'button';
@@ -1155,7 +1156,7 @@ const MIN_SCALE = 0.4;
   }
 
   function renderArtifact(data, root) {
-    document.documentElement.dataset.theme = data.theme || 'paper';
+    document.documentElement.dataset.theme = data.theme || 'blocks';
     root.textContent = '';
     const sheet = el('div', 'sheet');
     const layout = buildLayout(data);
