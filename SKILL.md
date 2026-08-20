@@ -130,12 +130,13 @@ things:
 `theme` sets the layout the artifact opens in, and the reader can switch at any
 time from the toolbar. Leave it out unless you have a reason:
 
-- `paper` (default) — hairline grid, structure carried by rules. The densest of
-  the three and the one that prints closest to what the screen shows.
-- `blocks` — every cell a bordered card, tinted per lane, with dashed lines of
-  interaction and visibility. The classic service blueprint people recognise
-  from a workshop wall; the most legible when a blueprint is being read aloud
-  to a room.
+- `blocks` (default) — every cell a bordered card, tinted per lane, with dashed
+  lines of interaction and visibility. The classic service blueprint people
+  recognise from a workshop wall, and the most legible when an artifact is being
+  read aloud to a room.
+- `paper` — hairline grid, structure carried by rules rather than borders. The
+  densest of the three and the one that prints closest to what the screen
+  shows.
 - `bands` — each lane announced by a full-width band, phases under a solid
   header, the emotion curve filled. Suits a journey being presented to
   stakeholders more than a blueprint being worked on.

@@ -2,14 +2,14 @@
 
 Turn a codebase into a Service Blueprint or a User Journey Map you can actually
 look at — a single self-contained HTML file that opens by double-click,
-offline, with every implementation claim backed by a verified `file:line` and
-every hole marked as a gap instead of smoothed over.
+offline, with every implementation claim backed by a verified route or
+`file:line`, and every hole marked as a gap instead of smoothed over.
 
 **[See it working →](https://craice.github.io/journey/)** — two live artifacts, no install.
 
 ### Service Blueprint
 
-![A Service Blueprint of an onboarding flow: five phases across, five lanes down, with the line of interaction and line of visibility drawn as full rules, two gaps and one risk marked in red.](docs/img/blueprint.png)
+![A Service Blueprint of an onboarding flow in the blocks layout: five phases across, five lanes down, each cell a bordered card tinted by lane, with dashed lines of interaction and visibility, and two gaps and one risk outlined in red.](docs/img/blueprint.png)
 
 Five phases across, five lanes down. The red cells are the point: a screen that
 was never built, a confirmation nothing sends, a handler that swallows its
@@ -17,11 +17,13 @@ errors. Each of the others carries the route or the `file:line` it came from.
 
 ### User Journey Map
 
-![A User Journey Map of the same flow: actions, an emotion sparkline dipping to a flagged low at "Waits", quotes, and opportunities.](docs/img/journey.png)
+![A User Journey Map of the same flow in the bands layout: full-width lane bands, phases under a solid header, and an emotion curve whose filled area dips to a flagged low at "Waits".](docs/img/journey.png)
 
 The same flow seen from the outside — what the person does, how it feels, what
-they say, and where the opportunity sits. The sparkline's low point is flagged,
-because the dip and the gap are the same fact told twice.
+they say, and where the opportunity sits. The curve's low point is flagged,
+because the dip and the gap are the same fact told twice. Shown here in the
+`bands` layout; the select in the toolbar switches any artifact between the
+three without regenerating it.
 
 ## Use it with a coding agent
 
@@ -53,8 +55,9 @@ Blueprint) and [`journey-onboarding.html`](examples/journey-onboarding.html)
 (a User Journey Map). Download either one and open it to see the format
 before writing your own — the blueprint shows Evidence, User actions,
 Frontstage, Backstage and Support processes lanes across a five-step
-onboarding flow; the journey shows the same flow through Actions, an emotion
-curve, Saying and Opportunities lanes.
+onboarding flow in the default `blocks` layout; the journey shows the same flow
+through Actions, an emotion curve, Saying and Opportunities lanes, and declares
+`bands` so it opens in the sectioned layout.
 
 ## What you get
 
@@ -63,9 +66,10 @@ curve, Saying and Opportunities lanes.
 - A Route / Code switch: the artifact shows each screen's route by default and
   swaps to the `file:line` behind it on demand, so the whole picture reads as a
   path through the product rather than a tour of the source tree.
-- Three layouts in every artifact — `paper` (hairline grid), `blocks` (the
-  classic bordered service blueprint) and `bands` (sectioned journey map) —
-  switchable from the toolbar without regenerating the file.
+- Three layouts in every artifact — `blocks` (the classic bordered service
+  blueprint, and the default), `paper` (a hairline grid whose structure comes
+  from rules) and `bands` (a sectioned journey map) — switchable from the
+  toolbar without regenerating the file.
 - Columns held to a readable measure, so a few phases on a wide monitor stay a
   grid rather than stretching into empty fields.
 - Print to PDF in landscape, with the interface and the sticky positioning
@@ -81,18 +85,18 @@ curve, Saying and Opportunities lanes.
 
 ## Design notes
 
-Swiss pure-grid layout by default, one accent colour, system fonts only. The
-`blocks` and `bands` layouts restate the same data in the two other
-conventions people expect, and travel inside the same file. No
-dependencies, no build step, no network access at runtime — the file that
-opens is the whole program. It prints the same grid it shows on screen, in
-landscape, without redesigning itself for paper — a grid wider than the sheet
-is clipped rather than shrunk.
+One accent colour, system fonts only, and three layouts that restate the same
+data in the conventions people already read: `blocks` by default, `paper` for a
+Swiss hairline grid, `bands` for a sectioned journey map. All three travel
+inside the same file — switching is a class flip, not a rebuild. No
+dependencies, no build step, no network access at runtime; the file that opens
+is the whole program. It prints in landscape without redesigning itself for
+paper, and a grid wider than the sheet is clipped rather than shrunk.
 
 ## Development
 
 ```bash
-node --test tests/          # 74 tests, no npm dependencies of any kind
+node --test tests/          # 76 tests, no npm dependencies of any kind
 node tools/build-examples.js  # regenerates examples/*.html from examples/src/*.json
 ```
 
